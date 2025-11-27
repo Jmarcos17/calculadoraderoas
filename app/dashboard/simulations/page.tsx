@@ -22,6 +22,8 @@ interface Simulation {
     leads: number;
     sales: number;
     revenue: number;
+    grossRevenue?: number;  // Opcional para compatibilidade com simulações antigas
+    commission?: number;    // Opcional para compatibilidade com simulações antigas
     roas: number;
     costPerSale: number;
   };

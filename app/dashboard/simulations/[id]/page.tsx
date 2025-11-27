@@ -20,6 +20,7 @@ interface Simulation {
     conversionRate: number;
     period: 'monthly' | 'daily';
     niche?: string;
+    commissionRate?: number;  // Opcional para compatibilidade com simulações antigas
     contractMonths?: number;
     growthRate?: number;
   };
@@ -27,6 +28,8 @@ interface Simulation {
     leads: number;
     sales: number;
     revenue: number;
+    grossRevenue?: number;  // Opcional para compatibilidade com simulações antigas
+    commission?: number;    // Opcional para compatibilidade com simulações antigas
     roas: number;
     costPerSale: number;
   };
@@ -132,6 +135,7 @@ export default function SimulationDetailPage() {
     cpl: simulation.inputData.cpl,
     conversionRate: simulation.inputData.conversionRate,
     period: simulation.inputData.period,
+    commissionRate: simulation.inputData.commissionRate,
     niche: simulation.inputData.niche as any,
     contractMonths: simulation.inputData.contractMonths,
     growthRate: simulation.inputData.growthRate,
@@ -255,7 +259,12 @@ export default function SimulationDetailPage() {
           Resultados
         </h2>
         <RoasResults
-          results={simulation.results}
+          results={{
+            ...simulation.results,
+            // Garantir que os novos campos existam (para compatibilidade com simulações antigas)
+            grossRevenue: simulation.results.grossRevenue ?? simulation.results.revenue,
+            commission: simulation.results.commission ?? 0,
+          }}
           input={inputData}
         />
       </div>

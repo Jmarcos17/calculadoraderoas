@@ -30,9 +30,12 @@ export default function RoasResults({ results, input, benchmarks }: RoasResultsP
     );
   }
 
-  const { revenue, grossRevenue, commission, leads, sales, roas, costPerSale } = results;
+  const { revenue, leads, sales, roas, costPerSale } = results;
+  // Campos opcionais para compatibilidade com simulações antigas
+  const grossRevenue = results.grossRevenue ?? revenue;
+  const commission = results.commission ?? 0;
   const niche = input.niche ? getNicheById(input.niche) : null;
-  const hasCommission = (input.commissionRate || 0) > 0;
+  const hasCommission = (input.commissionRate || 0) > 0 || commission > 0;
   
   // Usar benchmarks customizados se fornecidos, senão usar do nicho
   const effectiveBenchmarks = benchmarks || (niche && niche.id !== 'custom' ? {
