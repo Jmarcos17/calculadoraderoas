@@ -30,8 +30,9 @@ export default function RoasResults({ results, input, benchmarks }: RoasResultsP
     );
   }
 
-  const { revenue, leads, sales, roas, costPerSale } = results;
+  const { revenue, grossRevenue, commission, leads, sales, roas, costPerSale } = results;
   const niche = input.niche ? getNicheById(input.niche) : null;
+  const hasCommission = (input.commissionRate || 0) > 0;
   
   // Usar benchmarks customizados se fornecidos, senão usar do nicho
   const effectiveBenchmarks = benchmarks || (niche && niche.id !== 'custom' ? {
@@ -93,7 +94,7 @@ export default function RoasResults({ results, input, benchmarks }: RoasResultsP
 
       <div className="grid gap-3 md:grid-cols-2">
         <ResultCard
-          label="Faturamento estimado"
+          label={hasCommission ? "Faturamento líquido" : "Faturamento estimado"}
           value={formatCurrency(revenue)}
           highlight
         />
@@ -107,6 +108,18 @@ export default function RoasResults({ results, input, benchmarks }: RoasResultsP
           } : undefined}
         />
       </div>
+      {hasCommission && (
+        <div className="grid gap-3 md:grid-cols-2 border border-slate-200 rounded-xl p-3 bg-slate-50">
+          <ResultCard
+            label="Faturamento bruto"
+            value={formatCurrency(grossRevenue)}
+          />
+          <ResultCard
+            label="Comissão descontada"
+            value={formatCurrency(commission)}
+          />
+        </div>
+      )}
       <div className="grid gap-3 md:grid-cols-3">
         <ResultCard label="Leads estimados" value={Math.round(leads).toString()} />
         <ResultCard label="Vendas estimadas" value={Math.round(sales).toString()} />

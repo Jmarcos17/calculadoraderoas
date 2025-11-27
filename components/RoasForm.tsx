@@ -13,6 +13,7 @@ interface RoasFormProps {
     cpl?: number;
     conversionRate?: number;
     period?: PeriodType;
+    commissionRate?: number;
     niche?: NicheId;
     contractMonths?: number;
     growthRate?: number;
@@ -27,6 +28,7 @@ export default function RoasForm({ onCalculate, defaultValues }: RoasFormProps) 
   const [cpl, setCpl] = useState(defaultValues?.cpl?.toString() || '21.44');
   const [conversionRate, setConversionRate] = useState(defaultValues?.conversionRate?.toString() || '5');
   const [period, setPeriod] = useState<PeriodType>(defaultValues?.period || 'monthly');
+  const [commissionRate, setCommissionRate] = useState(defaultValues?.commissionRate?.toString() || '0');
   const [contractMonths, setContractMonths] = useState(defaultValues?.contractMonths?.toString() || '');
   const [growthRate, setGrowthRate] = useState(defaultValues?.growthRate?.toString() || '0');
   const [scenario, setScenario] = useState<ScenarioType>(defaultValues?.scenario || 'realistic');
@@ -51,6 +53,7 @@ export default function RoasForm({ onCalculate, defaultValues }: RoasFormProps) 
       cpl: parseFloat(cpl.replace(',', '.')) || 0,
       conversionRate: parseFloat(conversionRate.replace(',', '.')) || 0,
       period: normalizedPeriod,
+      commissionRate: commissionRate ? parseFloat(commissionRate.replace(',', '.')) : 0,
       niche,
       contractMonths: contractMonths ? parseFloat(contractMonths.replace(',', '.')) : undefined,
       growthRate: growthRate ? parseFloat(growthRate.replace(',', '.')) : undefined,
@@ -135,6 +138,21 @@ export default function RoasForm({ onCalculate, defaultValues }: RoasFormProps) 
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
             />
           </div>
+        </div>
+        <div>
+          <label className="block text-sm text-slate-600 mb-1">
+            Taxa de comissão (%)
+          </label>
+          <input
+            type="text"
+            value={commissionRate}
+            onChange={(e) => setCommissionRate(e.target.value)}
+            placeholder="Ex: 10 (para 10% de comissão)"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+          />
+          <p className="text-xs text-slate-500 mt-1">
+            Percentual de comissão que será descontado da receita bruta (opcional, padrão: 0%)
+          </p>
         </div>
       </fieldset>
 

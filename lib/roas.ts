@@ -11,6 +11,7 @@ export interface RoasInput {
   cpl: number;             // Custo por lead (R$)
   conversionRate: number;  // Taxa de conversão (%) de lead para venda
   period: PeriodType;      // Mensal ou diário
+  commissionRate?: number; // Taxa de comissão (%) - opcional, descontada da receita
   niche?: NicheId;         // Nicho selecionado (opcional)
   contractMonths?: number; // Duração do contrato em meses (opcional)
   growthRate?: number;     // Taxa de crescimento mensal do investimento (%) (opcional)
@@ -20,8 +21,10 @@ export interface RoasInput {
 export interface RoasOutput {
   leads: number;
   sales: number;
-  revenue: number;
-  roas: number;
+  revenue: number;        // Receita líquida (após descontar comissão, se houver)
+  grossRevenue: number;   // Receita bruta (antes de descontar comissão)
+  commission: number;     // Valor total da comissão (R$)
+  roas: number;           // ROAS calculado com receita líquida
   costPerSale: number;
 }
 
@@ -30,7 +33,9 @@ export interface MonthlyProjection {
   investment: number;
   leads: number;
   sales: number;
-  revenue: number;
+  revenue: number;        // Receita líquida
+  grossRevenue: number;  // Receita bruta
+  commission: number;    // Comissão do mês
   roas: number;
   cumulativeRevenue: number;
   cumulativeInvestment: number;
@@ -57,6 +62,7 @@ export function calculateRoas({
   cpl,
   conversionRate,
   period,
+  commissionRate = 0,
 }: RoasInput): RoasOutput {
   // Validação: garantir que CPL seja maior que zero
   if (cpl <= 0) {
@@ -66,6 +72,11 @@ export function calculateRoas({
   // Validação: garantir que investimento seja maior que zero
   if (investment <= 0) {
     throw new Error('Investimento deve ser maior que zero');
+  }
+  
+  // Validação: garantir que taxa de comissão seja entre 0 e 100
+  if (commissionRate < 0 || commissionRate > 100) {
+    throw new Error('Taxa de comissão deve estar entre 0% e 100%');
   }
   
   // Ajuste de período (se usuário estiver em modo diário, converte para mensal)
@@ -85,10 +96,16 @@ export function calculateRoas({
   // Cálculo de vendas: leads multiplicado pela taxa de conversão (em decimal)
   const sales = leads * (conversionRate / 100);
   
-  // Cálculo de receita: vendas multiplicado pelo ticket médio
-  const revenue = sales * ticket;
+  // Cálculo de receita bruta: vendas multiplicado pelo ticket médio
+  const grossRevenue = sales * ticket;
   
-  // Cálculo de ROAS: receita dividida pelo investimento
+  // Cálculo da comissão: receita bruta multiplicada pela taxa de comissão (em decimal)
+  const commission = grossRevenue * (commissionRate / 100);
+  
+  // Cálculo de receita líquida: receita bruta menos comissão
+  const revenue = grossRevenue - commission;
+  
+  // Cálculo de ROAS: receita líquida dividida pelo investimento
   const roas = baseInvestment > 0 ? revenue / baseInvestment : 0;
   
   // Cálculo de custo por venda: investimento dividido pelas vendas
@@ -98,6 +115,8 @@ export function calculateRoas({
     leads,
     sales,
     revenue,
+    grossRevenue,
+    commission,
     roas,
     costPerSale,
   };
@@ -134,6 +153,8 @@ export function calculateContractProjection(
       leads: monthResult.leads,
       sales: monthResult.sales,
       revenue: monthResult.revenue,
+      grossRevenue: monthResult.grossRevenue,
+      commission: monthResult.commission,
       roas: monthResult.roas,
       cumulativeRevenue,
       cumulativeInvestment,
