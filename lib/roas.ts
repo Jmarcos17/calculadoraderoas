@@ -58,13 +58,40 @@ export function calculateRoas({
   conversionRate,
   period,
 }: RoasInput): RoasOutput {
-  // Ajuste de período (se usuário estiver em modo diário)
+  // Validação: garantir que CPL seja maior que zero
+  if (cpl <= 0) {
+    throw new Error('Custo por lead deve ser maior que zero');
+  }
+  
+  // Validação: garantir que investimento seja maior que zero
+  if (investment <= 0) {
+    throw new Error('Investimento deve ser maior que zero');
+  }
+  
+  // Ajuste de período (se usuário estiver em modo diário, converte para mensal)
+  // Se o investimento for diário, multiplica por 30 para obter o mensal
+  // Se o investimento já for mensal, usa diretamente
+  // IMPORTANTE: O CPL é sempre o mesmo, independente do período (é o custo por lead)
+  // CORREÇÃO: Garantir que o período seja interpretado corretamente
+  // Por padrão, assumir que é mensal se não especificado ou se for um valor inválido
+  const normalizedPeriod = (period === 'daily' || period === 'monthly') ? period : 'monthly';
   const baseInvestment =
-    period === 'monthly' ? investment : investment * 30;
+    normalizedPeriod === 'monthly' ? investment : investment * 30;
+  
+  // Cálculo de leads: investimento mensal dividido pelo custo por lead
+  // O CPL não precisa ser ajustado porque é sempre "custo por lead", não varia com o período
   const leads = baseInvestment / cpl;
+  
+  // Cálculo de vendas: leads multiplicado pela taxa de conversão (em decimal)
   const sales = leads * (conversionRate / 100);
+  
+  // Cálculo de receita: vendas multiplicado pelo ticket médio
   const revenue = sales * ticket;
+  
+  // Cálculo de ROAS: receita dividida pelo investimento
   const roas = baseInvestment > 0 ? revenue / baseInvestment : 0;
+  
+  // Cálculo de custo por venda: investimento dividido pelas vendas
   const costPerSale = sales > 0 ? baseInvestment / sales : 0;
 
   return {
@@ -88,10 +115,14 @@ export function calculateContractProjection(
 
   for (let month = 1; month <= contractMonths; month++) {
     // Aplicar crescimento composto no investimento
+    // IMPORTANTE: O investimento aqui já deve estar no formato correto (mensal ou diário)
+    // conforme o período especificado no input
     const monthInvestment = input.investment * Math.pow(1 + growthRate / 100, month - 1);
     const monthResult = calculateRoas({
       ...input,
       investment: monthInvestment,
+      // Garantir que o período seja preservado corretamente
+      period: input.period || 'monthly',
     });
 
     cumulativeRevenue += monthResult.revenue;

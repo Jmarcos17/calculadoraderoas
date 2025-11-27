@@ -43,12 +43,14 @@ export default function RoasForm({ onCalculate, defaultValues }: RoasFormProps) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Garantir que o período seja sempre 'monthly' ou 'daily', nunca undefined
+    const normalizedPeriod: PeriodType = (period === 'daily' || period === 'monthly') ? period : 'monthly';
     const payload: RoasInput = {
       investment: parseFloat(investment.replace(',', '.')) || 0,
       ticket: parseFloat(ticket.replace(',', '.')) || 0,
       cpl: parseFloat(cpl.replace(',', '.')) || 0,
       conversionRate: parseFloat(conversionRate.replace(',', '.')) || 0,
-      period,
+      period: normalizedPeriod,
       niche,
       contractMonths: contractMonths ? parseFloat(contractMonths.replace(',', '.')) : undefined,
       growthRate: growthRate ? parseFloat(growthRate.replace(',', '.')) : undefined,
