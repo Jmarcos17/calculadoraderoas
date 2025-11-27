@@ -1,0 +1,148 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Tabela de Usuários
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  name           String?
+  password       String?   // Para autenticação por email/senha
+  emailVerified DateTime?
+  image          String?
+  role           String    @default("owner") // 'owner', 'admin', 'viewer'
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  accounts       Account[]
+  sessions       Session[]
+
+  @@index([email])
+  @@index([organizationId])
+}
+
+// Tabela de Organizações/Clientes
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique // para subdomínio: slug.seudominio.com
+  subdomain   String?  @unique // subdomínio customizado
+  customDomain String? // domínio próprio (ex: calculadora.cliente.com)
+  plan        String   @default("free") // 'free', 'pro', 'enterprise'
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+  branding    OrganizationBranding?
+  metrics     OrganizationMetric[]
+  simulations Simulation[]
+
+  @@index([slug])
+  @@index([subdomain])
+}
+
+// Configurações de Branding
+model OrganizationBranding {
+  id                String   @id @default(cuid())
+  organizationId    String   @unique
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  logoUrl           String?
+  primaryColor      String   @default("#0ea5e9") // cor principal
+  secondaryColor    String   @default("#64748b") // cor secundária
+  accentColor       String   @default("#06b6d4") // cor de destaque
+  fontFamily        String   @default("Inter")
+  companyName       String?
+  companyDescription String?
+  faviconUrl        String?
+  customCss         String?  @db.Text // CSS adicional
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// Métricas Reais do Negócio
+model OrganizationMetric {
+  id                String   @id @default(cuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  nicheId           String?  // referência ao nicho
+  avgTicket         Decimal  @db.Decimal(10, 2)
+  avgCpl            Decimal  @db.Decimal(10, 2)
+  avgConversionRate Decimal  @db.Decimal(5, 2)
+  goodRoas          Decimal  @db.Decimal(5, 2)
+  excellentRoas     Decimal  @db.Decimal(5, 2)
+  avgRoas           Decimal  @db.Decimal(5, 2)
+  periodStart       DateTime?
+  periodEnd         DateTime?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([isActive])
+}
+
+// Histórico de Simulações
+model Simulation {
+  id             String   @id @default(cuid())
+  organizationId  String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String?
+  inputData      Json     // dados de entrada
+  results        Json     // resultados calculados
+  projectionData Json?    // dados completos da projeção (se houver contrato multi-mês)
+  createdAt      DateTime  @default(now())
+
+  @@index([organizationId])
+  @@index([createdAt])
+}
+
+// NextAuth - Account (para OAuth)
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// NextAuth - Session
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// NextAuth - Verification Token
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}

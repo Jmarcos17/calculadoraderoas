@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilos para impressão */
+@media print {
+  body {
+    background: white;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-break {
+    page-break-after: always;
+  }
+}
+
+/* Modo apresentação */
+.presentation-mode {
+  font-size: 1.2em;
+}
+
+.presentation-mode h3 {
+  font-size: 1.8em;
+}
+
+.presentation-mode table {
+  font-size: 1.1em;
+}
+
