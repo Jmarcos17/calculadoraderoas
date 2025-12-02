@@ -26,7 +26,7 @@ export default function RoasForm({ onCalculate, defaultValues, branding }: RoasF
     handleSubmit,
     setValue,
     watch,
-    formState: { errors },
+    formState: { errors, dirtyFields },
   } = useForm<RoasFormData>({
     resolver: zodResolver(roasFormSchema) as any,
     mode: 'onChange',
@@ -60,12 +60,21 @@ export default function RoasForm({ onCalculate, defaultValues, branding }: RoasF
       const sales = revenue / ticket;
       const conversionRate = leads > 0 ? (sales / leads) * 100 : 0;
       
-      // Preencher campos calculados
-      setValue('cpl', Number(cpl.toFixed(2)));
-      setValue('ticket', Number(ticket.toFixed(2)));
-      setValue('conversionRate', Number(conversionRate.toFixed(2)));
+      // Preencher campos calculados APENAS se não foram editados manualmente
+      // Isso permite que o usuário ajuste os valores sem que o sistema sobrescreva
+      const dirty = dirtyFields;
+      
+      if (!dirty.cpl) {
+        setValue('cpl', Number(cpl.toFixed(2)));
+      }
+      if (!dirty.ticket) {
+        setValue('ticket', Number(ticket.toFixed(2)));
+      }
+      if (!dirty.conversionRate) {
+        setValue('conversionRate', Number(conversionRate.toFixed(2)));
+      }
     }
-  }, [selectedNiche, targetRoas, investment, setValue]);
+  }, [selectedNiche, targetRoas, investment, setValue, dirtyFields]);
 
   const onSubmit = async (data: RoasFormData) => {
     setIsSubmitting(true);
