@@ -110,9 +110,49 @@ export function calculateRoas(input: RoasInput): RoasOutput {
   // Obter métricas de referência do nicho (se disponível)
   const nicheBenchmark = niche ? getNicheById(niche) : null;
 
-  if (targetRoas && targetRoas > 0) {
+  // ============================================================================
+  // PRIORIZAÇÃO DE MODOS DE CÁLCULO
+  // ============================================================================
+  // 1. Se usuário forneceu TODOS os valores manualmente → MODO TRADICIONAL
+  // 2. Se usuário forneceu ROAS desejado → MODO REVERSO
+  // 3. Fallback → MODO NICHO
+  // ============================================================================
+
+  if (ticket && cpl && conversionRate !== undefined) {
     // ========================================================================
-    // MODO 1: CÁLCULO REVERSO A PARTIR DO ROAS DESEJADO
+    // MODO 1: CÁLCULO TRADICIONAL (valores manuais têm prioridade)
+    // ========================================================================
+    
+    finalCpl = cpl;
+    finalTicket = ticket;
+    finalConversionRate = conversionRate;
+    
+    // Validações
+    if (finalCpl <= 0) {
+      throw new Error('Custo por lead deve ser maior que zero');
+    }
+    
+    // Cálculos tradicionais
+    finalLeads = baseInvestment / finalCpl;
+    
+    // Para nichos baseados em contratos, conversionRate é o número absoluto
+    if (nicheBenchmark?.metricType === 'contracts') {
+      finalSales = conversionRate;  // Número direto de contratos
+      finalConversionRate = finalLeads > 0 ? (finalSales / finalLeads) * 100 : 0;
+    } else {
+      // Modo padrão: conversionRate é percentual
+      if (finalConversionRate <= 0 || finalConversionRate > 100) {
+        throw new Error('Taxa de conversão deve estar entre 0% e 100%');
+      }
+      finalSales = finalLeads * (finalConversionRate / 100);
+    }
+    
+    finalRevenue = finalSales * finalTicket;
+    finalRoas = baseInvestment > 0 ? finalRevenue / baseInvestment : 0;
+    
+  } else if (targetRoas && targetRoas > 0) {
+    // ========================================================================
+    // MODO 2: CÁLCULO REVERSO A PARTIR DO ROAS DESEJADO
     // ========================================================================
     // Usuário informou: Investimento + ROAS desejado
     // Calculamos: Faturamento e métricas baseadas no nicho
@@ -140,40 +180,6 @@ export function calculateRoas(input: RoasInput): RoasOutput {
       finalSales = finalRevenue / finalTicket;
       finalConversionRate = finalLeads > 0 ? (finalSales / finalLeads) * 100 : 0;
     }
-    
-  } else if (ticket && cpl && conversionRate) {
-    // ========================================================================
-    // MODO 2: CÁLCULO TRADICIONAL (se métricas foram fornecidas manualmente)
-    // ========================================================================
-    
-    finalCpl = cpl;
-    finalTicket = ticket;
-    finalConversionRate = conversionRate;
-    // finalConversionRate is determined below based on metricType
-    
-    // Validações
-    if (finalCpl <= 0) {
-      throw new Error('Custo por lead deve ser maior que zero');
-    }
-    
-    // Cálculos tradicionais
-    finalLeads = baseInvestment / finalCpl;
-    
-    // Para nichos baseados em contratos, conversionRate é o número absoluto
-    if (nicheBenchmark?.metricType === 'contracts') {
-      finalSales = conversionRate;  // Número direto de contratos
-      finalConversionRate = finalLeads > 0 ? (finalSales / finalLeads) * 100 : 0;
-    } else {
-      // Modo padrão: conversionRate é percentual
-      finalConversionRate = conversionRate; // Assign here for standard mode
-      if (finalConversionRate <= 0 || finalConversionRate > 100) {
-        throw new Error('Taxa de conversão deve estar entre 0% e 100%');
-      }
-      finalSales = finalLeads * (finalConversionRate / 100);
-    }
-    
-    finalRevenue = finalSales * finalTicket;
-    finalRoas = baseInvestment > 0 ? finalRevenue / baseInvestment : 0;
     
   } else {
     // ========================================================================
