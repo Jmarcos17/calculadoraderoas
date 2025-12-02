@@ -77,7 +77,112 @@ export default function RoasForm({ onCalculate, defaultValues, branding }: RoasF
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      {/* ... existing fields ... */}
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">
+            Nicho de Mercado
+          </label>
+          <select
+            {...register('niche')}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+          >
+            {getAllNiches().map((niche) => (
+              <option key={niche.id} value={niche.id}>
+                {niche.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Investimento em Tráfego (R$)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              {...register('investment', { valueAsNumber: true })}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+            />
+            {errors.investment && (
+              <p className="text-xs text-red-500 mt-1">{errors.investment.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Ticket Médio (R$)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              {...register('ticket', { valueAsNumber: true })}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+            />
+            {errors.ticket && (
+              <p className="text-xs text-red-500 mt-1">{errors.ticket.message}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Custo por Lead (CPL) (R$)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              {...register('cpl', { valueAsNumber: true })}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+            />
+            {errors.cpl && (
+              <p className="text-xs text-red-500 mt-1">{errors.cpl.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Taxa de Conversão (%)
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              {...register('conversionRate', { valueAsNumber: true })}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+            />
+            {errors.conversionRate && (
+              <p className="text-xs text-red-500 mt-1">{errors.conversionRate.message}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Comissão da Agência (%)
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              {...register('commissionRate', { valueAsNumber: true })}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Tempo de Contrato (Meses)
+            </label>
+            <input
+              type="number"
+              {...register('contractMonths', { valueAsNumber: true })}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Toggle de Cenários */}
       <div className="border border-slate-200 rounded-xl p-4">
