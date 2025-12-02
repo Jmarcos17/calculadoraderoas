@@ -5,7 +5,19 @@ import { RoasOutput } from '@/lib/roas';
 interface Simulation {
   id: string;
   inputData: any;
-  results: RoasOutput;
+  results: {
+    leads: number;
+    sales: number;
+    revenue: number;
+    grossRevenue: number;
+    commission: number;
+    roas: number;
+    roi: number;
+    costPerSale: number;
+    suggestedInvestment?: number;
+    agencyRoi?: number;
+    userAgencyRoi?: number;
+  };
   createdAt: string;
 }
 

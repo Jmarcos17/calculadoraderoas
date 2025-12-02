@@ -264,6 +264,8 @@ export default function SimulationDetailPage() {
             // Garantir que os novos campos existam (para compatibilidade com simulações antigas)
             grossRevenue: simulation.results.grossRevenue ?? simulation.results.revenue,
             commission: simulation.results.commission ?? 0,
+            roi: simulation.results.revenue > 0 ? ((simulation.results.revenue - simulation.inputData.investment) / simulation.inputData.investment) * 100 : 0,
+            costPerSale: simulation.results.costPerSale,
           }}
           input={inputData}
         />

@@ -20,7 +20,19 @@ interface Simulation {
     contractMonths?: number;
     growthRate?: number;
   };
-  results: RoasOutput;
+  results: {
+    leads: number;
+    sales: number;
+    revenue: number;
+    grossRevenue: number;
+    commission: number;
+    roas: number;
+    roi: number;
+    costPerSale: number;
+    suggestedInvestment?: number;
+    agencyRoi?: number;
+    userAgencyRoi?: number;
+  };
   projectionData?: any;
   createdAt: string;
 }
@@ -55,7 +67,16 @@ export default function SimulationsPage() {
       })
       .then((data) => {
         if (data !== null) {
-          setSimulations(Array.isArray(data) ? data : []);
+          const mappedData = (Array.isArray(data) ? data : []).map((sim: any) => ({
+            ...sim,
+            results: {
+              ...sim.results,
+              grossRevenue: sim.results.grossRevenue ?? sim.results.revenue,
+              commission: sim.results.commission ?? 0,
+              roi: sim.results.roi ?? (sim.results.revenue > 0 ? ((sim.results.revenue - sim.inputData.investment) / sim.inputData.investment) * 100 : 0),
+            }
+          }));
+          setSimulations(mappedData);
         }
         setLoading(false);
       })
