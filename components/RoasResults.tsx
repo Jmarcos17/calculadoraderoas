@@ -250,35 +250,42 @@ export default function RoasResults({ results, input, benchmarks, branding, onSc
       )}
 
       {/* 5. Comparativo de Agências (Se disponível) */}
-      {(results.agencyRoi !== undefined || results.userAgencyRoi !== undefined) && (
+      {results.agencyRoi !== undefined && results.userAgencyRoi !== undefined && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 relative overflow-hidden">
           <div className="relative z-10">
             <h3 className="text-base font-semibold text-slate-900 mb-4">
-              Por que escolher nossa agência?
+              📊 Comparativo: Agência Comum vs Nossa Agência
             </h3>
             <div className="grid gap-4 md:grid-cols-2 items-center">
-              {results.agencyRoi !== undefined && (
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 opacity-70">
-                  <p className="text-xs text-slate-500 mb-1">Agência Comum</p>
-                  <p className="text-xl font-bold text-slate-600">
-                    {results.agencyRoi.toFixed(1)}% ROI
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <p className="text-xs text-slate-500 mb-1">Agência Comum</p>
+                <p className="text-2xl font-bold text-slate-600">
+                  {results.agencyRoi.toFixed(1)}% ROI
+                </p>
+                <p className="text-xs text-slate-500 mt-2">
+                  Retorno padrão de mercado
+                </p>
+              </div>
+              
+              <div 
+                className="p-4 rounded-xl border-2 bg-gradient-to-br from-white to-sky-50 shadow-lg transform scale-105"
+                style={{ borderColor: primaryColor }}
+              >
+                <p className="text-xs font-bold mb-1" style={{ color: primaryColor }}>
+                  ✨ COM NOSSA ESTRATÉGIA
+                </p>
+                <p className="text-3xl font-bold text-slate-900">
+                  {results.userAgencyRoi.toFixed(1)}% ROI
+                </p>
+                <div className="mt-2 pt-2 border-t border-sky-200">
+                  <p className="text-sm font-semibold text-green-600">
+                    +{((results.userAgencyRoi - results.agencyRoi)).toFixed(1)}% de lucro extra
+                  </p>
+                  <p className="text-xs text-slate-600 mt-1">
+                    Isso representa mais retorno todo mês
                   </p>
                 </div>
-              )}
-              {results.userAgencyRoi !== undefined && (
-                <div 
-                  className="p-4 rounded-xl border-2 bg-white shadow-sm transform scale-105"
-                  style={{ borderColor: primaryColor }}
-                >
-                  <p className="text-xs font-bold mb-1" style={{ color: primaryColor }}>COM NOSSA ESTRATÉGIA</p>
-                  <p className="text-2xl font-bold text-slate-900">
-                    {results.userAgencyRoi.toFixed(1)}% ROI
-                  </p>
-                  <p className="text-xs text-green-600 font-medium mt-1">
-                    +{((results.userAgencyRoi - (results.agencyRoi || 0))).toFixed(1)}% de lucro extra
-                  </p>
-                </div>
-              )}
+              </div>
             </div>
           </div>
         </div>
