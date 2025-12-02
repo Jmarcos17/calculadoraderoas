@@ -1,15 +1,16 @@
-import { 
-  TrendingUp, 
-  Users, 
-  ShoppingCart, 
-  DollarSign, 
-  Target, 
-  Percent, 
-  Briefcase 
+import {
+  TrendingUp,
+  Users,
+  ShoppingCart,
+  DollarSign,
+  Target,
+  Percent,
+  Briefcase
 } from 'lucide-react';
 
 import { RoasOutput, RoasInput } from '@/lib/roas';
 import { getNicheById } from '@/lib/niches';
+import StrategicCTA from './StrategicCTA';
 
 interface RoasResultsProps {
   results: RoasOutput | null;
@@ -24,6 +25,8 @@ interface RoasResultsProps {
     secondaryColor: string;
     accentColor: string;
   } | null;
+  onScheduleCall?: () => void;
+  onExportProposal?: () => void;
 }
 
 const formatCurrency = (value: number) =>
@@ -33,7 +36,7 @@ const formatCurrency = (value: number) =>
     maximumFractionDigits: 2,
   });
 
-export default function RoasResults({ results, input, benchmarks, branding }: RoasResultsProps) {
+export default function RoasResults({ results, input, benchmarks, branding, onScheduleCall, onExportProposal }: RoasResultsProps) {
   if (!results || !input) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl p-8 bg-slate-50/50">
@@ -132,6 +135,20 @@ export default function RoasResults({ results, input, benchmarks, branding }: Ro
         </div>
       </div>
 
+      {/* CTA estratégico após resultados positivos */}
+      {(performance === 'excellent' || performance === 'good') && onScheduleCall && (
+        <StrategicCTA
+          variant="primary"
+          title="Resultados Impressionantes! Vamos Potencializar Ainda Mais?"
+          description="Esses números são excelentes! Em uma consultoria gratuita de 30 minutos, podemos mostrar estratégias personalizadas para aumentar seu ROAS em até 40%."
+          buttonText="Agendar Consultoria Gratuita"
+          onAction={onScheduleCall}
+          urgencyText="⚡ Apenas 3 vagas disponíveis esta semana"
+          icon="sparkles"
+          branding={branding}
+        />
+      )}
+
       {/* 2. Métricas de Eficiência (Grid 3 colunas) */}
       <div>
         <h4 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
@@ -223,6 +240,19 @@ export default function RoasResults({ results, input, benchmarks, branding }: Ro
         </div>
       )}
 
+      {/* CTA após sugestão de investimento */}
+      {results.suggestedInvestment && results.suggestedInvestment > 0 && onExportProposal && (
+        <StrategicCTA
+          variant="secondary"
+          title="Gostou da projeção? Baixe uma proposta comercial completa"
+          description="Receba um PDF profissional com toda a análise, cronograma e garantias."
+          buttonText="Baixar Proposta em PDF"
+          onAction={onExportProposal}
+          icon="arrow"
+          branding={branding}
+        />
+      )}
+
       {/* 5. Comparativo de Agências (Se disponível) */}
       {(results.agencyRoi !== undefined || results.userAgencyRoi !== undefined) && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 relative overflow-hidden">
@@ -256,6 +286,31 @@ export default function RoasResults({ results, input, benchmarks, branding }: Ro
             </div>
           </div>
         </div>
+      )}
+
+      {/* CTA urgente após comparação de agências com vantagem clara */}
+      {results.userAgencyRoi !== undefined && results.agencyRoi !== undefined &&
+       results.userAgencyRoi > results.agencyRoi && onScheduleCall && (
+        <StrategicCTA
+          variant="urgency"
+          title="Você está perdendo dinheiro com a agência atual!"
+          description={`Nossa estratégia entrega ${((results.userAgencyRoi - results.agencyRoi)).toFixed(1)}% mais lucro. Isso representa milhares de reais deixados na mesa todo mês.`}
+          buttonText="Quero Migrar Agora"
+          onAction={onScheduleCall}
+          urgencyText="⏰ Oferta válida apenas até o final desta semana"
+          branding={branding}
+        />
+      )}
+
+      {/* CTA minimal no final para quem ainda não agiu */}
+      {!results.suggestedInvestment && onScheduleCall && (
+        <StrategicCTA
+          variant="minimal"
+          title="Quer descobrir quanto investir para alcançar sua meta de faturamento?"
+          buttonText="Falar com Especialista"
+          onAction={onScheduleCall}
+          branding={branding}
+        />
       )}
     </section>
   );

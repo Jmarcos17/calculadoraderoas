@@ -5,6 +5,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { ContractProjection, RoasInput } from '@/lib/roas';
 import { exportProjectionToPDF } from '@/lib/pdf-export';
+import { exportCommercialProposal } from '@/lib/pdf-commercial-proposal';
 import {
   LineChart,
   Line,
@@ -17,17 +18,26 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import StrategicCTA from './StrategicCTA';
 
 interface ContractProjectionProps {
   projection: ContractProjection;
   input?: RoasInput;
   organizationName?: string;
+  branding?: {
+    primaryColor: string;
+    secondaryColor: string;
+    accentColor: string;
+  } | null;
+  onScheduleCall?: () => void;
 }
 
 export default function ContractProjectionView({
   projection,
   input,
   organizationName,
+  branding,
+  onScheduleCall,
 }: ContractProjectionProps) {
   const formatCurrency = (value: number) =>
     value.toLocaleString('pt-BR', {
@@ -43,6 +53,20 @@ export default function ContractProjectionView({
   const handleExportPDF = () => {
     if (input) {
       exportProjectionToPDF(projection, input, organizationName);
+    }
+  };
+
+  const handleExportCommercialProposal = () => {
+    if (input) {
+      exportCommercialProposal({
+        projection,
+        input,
+        organizationName,
+        validityDays: 7,
+        includeGuarantees: true,
+        includeTimeline: true,
+      });
+      toast.success('Proposta comercial gerada com sucesso!');
     }
   };
 
@@ -170,12 +194,20 @@ export default function ContractProjectionView({
       {/* Botões de Ação - sempre exibir se houver projeção */}
       <div className="flex flex-wrap justify-end gap-2 no-print">
         <button
+          onClick={handleExportCommercialProposal}
+          disabled={!input}
+          className="rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg hover:from-purple-700 hover:to-indigo-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
+        >
+          <span>📋</span>
+          Gerar Proposta Comercial
+        </button>
+        <button
           onClick={handleExportPDF}
           disabled={!input}
           className="rounded-lg bg-sky-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-600 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span>📄</span>
-          Exportar PDF
+          PDF Simples
         </button>
         <button
           onClick={exportToCSV}
@@ -440,6 +472,20 @@ export default function ContractProjectionView({
         </div>
       )}
 
+      {/* CTA após comparação de lucro mostrando economia significativa */}
+      {input?.agencyFee && input?.userAgencyFee && input.agencyFee > input.userAgencyFee && onScheduleCall && (
+        <StrategicCTA
+          variant="primary"
+          title={`Economize ${formatCurrency((input.agencyFee - input.userAgencyFee) * projection.monthly.length)} em ${projection.monthly.length} Meses!`}
+          description="Nossa mensalidade mais competitiva significa mais dinheiro no seu bolso todo mês. Veja como podemos aplicar essa mesma estratégia ao seu negócio."
+          buttonText="Quero Começar Agora"
+          onAction={onScheduleCall}
+          urgencyText="🔥 Promoção válida apenas para os próximos 5 clientes"
+          icon="sparkles"
+          branding={branding}
+        />
+      )}
+
       {/* Tabela Detalhada Mês a Mês */}
       <div className="bg-white rounded-xl border border-slate-200 p-6">
         <h3 className="text-lg font-semibold text-slate-900 mb-4">
@@ -504,6 +550,20 @@ export default function ContractProjectionView({
           ))}
         </ul>
       </div>
+
+      {/* CTA Final: Conversão após visualização completa */}
+      {onScheduleCall && (
+        <StrategicCTA
+          variant="primary"
+          title="Pronto para Transformar Esses Números em Realidade?"
+          description={`Esta projeção mostra um potencial de ${formatCurrency(projection.total.totalRevenue - projection.total.totalInvestment)} em lucro líquido. Agende uma reunião estratégica gratuita de 30 minutos e descubra como alcançar esses resultados.`}
+          buttonText="Agendar Reunião Estratégica Gratuita"
+          onAction={onScheduleCall}
+          urgencyText="📅 Apenas 2 horários disponíveis esta semana"
+          icon="calendar"
+          branding={branding}
+        />
+      )}
     </div>
   );
 }

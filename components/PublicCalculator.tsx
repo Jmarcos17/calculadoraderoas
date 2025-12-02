@@ -15,6 +15,8 @@ import {
   calculateScenarios,
 } from '@/lib/roas';
 import ScenariosComparison from '@/components/ScenariosComparison';
+import { exportCommercialProposal } from '@/lib/pdf-commercial-proposal';
+import toast from 'react-hot-toast';
 
 interface PublicCalculatorProps {
   organizationId: string;
@@ -134,8 +136,85 @@ export default function PublicCalculator({
   };
 
   const displayName = branding?.companyName || organizationName;
-  const displayDescription = branding?.companyDescription || 
+  const displayDescription = branding?.companyDescription ||
     'Descubra quanto você pode faturar com seu investimento em tráfego.';
+
+  // Handlers para CTAs
+  const handleScheduleCall = () => {
+    // Aqui você pode integrar com Calendly, Cal.com, ou outro sistema de agendamento
+    // Por enquanto, vamos abrir o WhatsApp ou mostrar um modal
+    const message = encodeURIComponent(
+      `Olá! Vi a projeção de ROAS e gostaria de agendar uma consultoria gratuita para discutir os resultados.`
+    );
+    const whatsappNumber = '5511999999999'; // Substitua pelo número da organização
+    window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
+    toast.success('Redirecionando para WhatsApp...');
+  };
+
+  const handleExportProposal = () => {
+    if (input && projection) {
+      exportCommercialProposal({
+        projection,
+        input,
+        organizationName: displayName,
+        validityDays: 7,
+        includeGuarantees: true,
+        includeTimeline: true,
+        branding: branding ? {
+          primaryColor: branding.primaryColor,
+          secondaryColor: branding.secondaryColor,
+          logoUrl: branding.logoUrl || undefined,
+        } : undefined,
+      });
+      toast.success('Proposta comercial gerada com sucesso!');
+    } else if (input && results) {
+      // Se não tiver projeção, criar uma básica de 1 mês
+      const singleMonthProjection: ContractProjection = {
+        monthly: [{
+          month: 1,
+          investment: input.investment,
+          leads: results.leads,
+          sales: results.sales,
+          revenue: results.revenue,
+          grossRevenue: results.grossRevenue,
+          commission: results.commission,
+          roas: results.roas,
+          cumulativeRevenue: results.revenue,
+          cumulativeInvestment: input.investment,
+        }],
+        total: {
+          totalInvestment: input.investment,
+          totalRevenue: results.revenue,
+          totalLeads: results.leads,
+          totalSales: results.sales,
+          averageRoas: results.roas,
+          finalRoas: results.roas,
+        },
+        insights: [
+          `ROAS projetado: ${results.roas.toFixed(2)}x`,
+          `Retorno sobre investimento: ${results.roi.toFixed(1)}%`,
+        ],
+      };
+
+      exportCommercialProposal({
+        projection: singleMonthProjection,
+        input,
+        results,
+        organizationName: displayName,
+        validityDays: 7,
+        includeGuarantees: true,
+        includeTimeline: true,
+        branding: branding ? {
+          primaryColor: branding.primaryColor,
+          secondaryColor: branding.secondaryColor,
+          logoUrl: branding.logoUrl || undefined,
+        } : undefined,
+      });
+      toast.success('Proposta comercial gerada com sucesso!');
+    } else {
+      toast.error('Calcule uma projeção primeiro!');
+    }
+  };
 
   return (
     <main 
@@ -207,8 +286,8 @@ export default function PublicCalculator({
                 <span className="w-1 h-6 rounded-full" style={{ backgroundColor: secondaryColor }}></span>
                 Resultados Projetados
               </h2>
-              <RoasResults 
-                results={results} 
+              <RoasResults
+                results={results}
                 input={input || undefined}
                 benchmarks={metrics ? {
                   goodRoas: metrics.goodRoas,
@@ -216,6 +295,8 @@ export default function PublicCalculator({
                   avgRoas: metrics.avgRoas,
                 } : undefined}
                 branding={branding}
+                onScheduleCall={handleScheduleCall}
+                onExportProposal={handleExportProposal}
               />
             </div>
 
@@ -233,6 +314,8 @@ export default function PublicCalculator({
                   projection={projection}
                   input={input || undefined}
                   organizationName={displayName}
+                  branding={branding}
+                  onScheduleCall={handleScheduleCall}
                 />
               </div>
             )}
