@@ -184,7 +184,7 @@ export default function PublicCalculator({
           </div>
         </header>
 
-        <div className="grid gap-8 lg:grid-cols-[1fr,1.2fr]">
+        <div className="flex flex-col gap-8">
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
             <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
               <span className="w-1 h-6 rounded-full" style={{ backgroundColor: accentColor }}></span>
