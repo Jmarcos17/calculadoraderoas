@@ -6,18 +6,20 @@ import { prisma } from '@/lib/db/prisma';
 import { z } from 'zod';
 import { handleApiError } from '@/lib/api-error';
 
+const inputDataSchema = z.object({
+  investment: z.number(),
+  targetRoas: z.number().optional(),
+  ticket: z.number().optional(),
+  cpl: z.number().optional(),
+  conversionRate: z.number().optional(),
+  period: z.enum(['monthly', 'daily']),
+  niche: z.string().optional(),
+  contractMonths: z.number().optional(),
+  growthRate: z.number().optional(),
+});
+
 const simulationSchema = z.object({
-  inputData: z.object({
-    investment: z.number(),
-    ticket: z.number(),
-    cpl: z.number(),
-    conversionRate: z.number(),
-    period: z.enum(['monthly', 'daily']),
-    niche: z.string().optional(),
-    commissionRate: z.number().optional(),
-    contractMonths: z.number().optional(),
-    growthRate: z.number().optional(),
-  }),
+  inputData: inputDataSchema,
   results: z.object({
     leads: z.number(),
     sales: z.number(),

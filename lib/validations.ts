@@ -3,11 +3,11 @@ import { NicheId } from './niches';
 
 export const roasFormSchema = z.object({
   investment: z.coerce.number().min(0.01, 'Investimento deve ser maior que zero'),
-  ticket: z.coerce.number().min(0.01, 'Ticket médio deve ser maior que zero'),
-  cpl: z.coerce.number().min(0.01, 'Custo por lead deve ser maior que zero'),
-  conversionRate: z.coerce.number().min(0, 'Taxa de conversão não pode ser negativa').max(100, 'Taxa de conversão máxima é 100%'),
+  targetRoas: z.coerce.number().min(0.01, 'ROAS deve ser maior que zero').optional(),
+  ticket: z.coerce.number().min(0.01, 'Ticket médio deve ser maior que zero').optional(),
+  cpl: z.coerce.number().min(0.01, 'Custo por lead deve ser maior que zero').optional(),
+  conversionRate: z.coerce.number().min(0, 'Taxa de conversão não pode ser negativa').max(100, 'Taxa de conversão máxima é 100%').optional(),
   period: z.enum(['monthly', 'daily']),
-  commissionRate: z.coerce.number().min(0).max(100).optional().default(0),
   niche: z.string().optional(),
   contractMonths: z.preprocess(
     (val) => (val === '' || val === 0 ? undefined : val),
@@ -17,7 +17,6 @@ export const roasFormSchema = z.object({
   scenario: z.enum(['optimistic', 'realistic', 'pessimistic']).optional().default('realistic'),
   agencyFee: z.coerce.number().min(0).optional(),
   userAgencyFee: z.coerce.number().min(0).optional(),
-  targetRoas: z.coerce.number().min(0).optional(),
   targetRevenue: z.coerce.number().min(0).optional(),
 });
 

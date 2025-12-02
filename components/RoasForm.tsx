@@ -31,13 +31,10 @@ export default function RoasForm({ onCalculate, defaultValues, branding }: RoasF
     resolver: zodResolver(roasFormSchema) as any,
     mode: 'onChange',
     defaultValues: {
-      investment: 1000,
-      ticket: 800,
-      cpl: 21.44,
-      conversionRate: 5,
+      investment: 3000,
+      targetRoas: 3.0,
       period: 'monthly',
-      commissionRate: 0,
-      niche: 'custom',
+      niche: 'beleza',
       scenario: 'realistic',
       ...defaultValues,
     },
@@ -47,16 +44,28 @@ export default function RoasForm({ onCalculate, defaultValues, branding }: RoasF
   const selectedPeriod = watch('period');
   const selectedScenario = watch('scenario');
   const contractMonths = watch('contractMonths');
+  const targetRoas = watch('targetRoas');
+  const investment = watch('investment');
 
-  // Auto-preenchimento quando nicho muda
+  // Auto-preenchimento quando nicho ou ROAS muda
   useEffect(() => {
-    if (selectedNiche && selectedNiche !== 'custom') {
+    if (selectedNiche && selectedNiche !== 'custom' && targetRoas && investment) {
       const nicheData = getNicheById(selectedNiche);
-      setValue('ticket', nicheData.avgTicket);
-      setValue('cpl', nicheData.avgCpl);
-      setValue('conversionRate', nicheData.avgConversionRate);
+      
+      // Cálculo reverso automático
+      const revenue = investment * targetRoas;
+      const cpl = nicheData.avgCpl;
+      const ticket = nicheData.avgTicket;
+      const leads = investment / cpl;
+      const sales = revenue / ticket;
+      const conversionRate = leads > 0 ? (sales / leads) * 100 : 0;
+      
+      // Preencher campos calculados
+      setValue('cpl', Number(cpl.toFixed(2)));
+      setValue('ticket', Number(ticket.toFixed(2)));
+      setValue('conversionRate', Number(conversionRate.toFixed(2)));
     }
-  }, [selectedNiche, setValue]);
+  }, [selectedNiche, targetRoas, investment, setValue]);
 
   const onSubmit = async (data: RoasFormData) => {
     setIsSubmitting(true);
@@ -94,10 +103,11 @@ export default function RoasForm({ onCalculate, defaultValues, branding }: RoasF
           </select>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        {/* INPUTS PRINCIPAIS: Investimento e ROAS */}
+        <div className="grid gap-4 md:grid-cols-2 bg-sky-50 p-4 rounded-lg border border-sky-200">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
-              Investimento Mensal em Tráfego (R$)
+              💰 Investimento Mensal (R$)
             </label>
             <input
               type="number"
@@ -109,70 +119,86 @@ export default function RoasForm({ onCalculate, defaultValues, branding }: RoasF
             {errors.investment && (
               <p className="text-xs text-red-500 mt-1">{errors.investment.message}</p>
             )}
-            <p className="text-xs text-slate-500 mt-1">Valor que você investe por mês</p>
+            <p className="text-xs text-slate-500 mt-1">Quanto você investe por mês</p>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
-              Ticket Médio (R$)
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              {...register('ticket', { valueAsNumber: true })}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-            />
-            {errors.ticket && (
-              <p className="text-xs text-red-500 mt-1">{errors.ticket.message}</p>
-            )}
-          </div>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Custo por Lead (CPL) (R$)
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              {...register('cpl', { valueAsNumber: true })}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-            />
-            {errors.cpl && (
-              <p className="text-xs text-red-500 mt-1">{errors.cpl.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Taxa de Conversão (%)
+              🎯 ROAS Desejado
             </label>
             <input
               type="number"
               step="0.1"
-              {...register('conversionRate', { valueAsNumber: true })}
+              {...register('targetRoas', { valueAsNumber: true })}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              placeholder="Ex: 3.0"
             />
-            {errors.conversionRate && (
-              <p className="text-xs text-red-500 mt-1">{errors.conversionRate.message}</p>
+            {errors.targetRoas && (
+              <p className="text-xs text-red-500 mt-1">{errors.targetRoas.message}</p>
             )}
+            <p className="text-xs text-slate-500 mt-1">Retorno esperado (ex: 3.0x = R$3 para cada R$1)</p>
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Comissão da Agência (%)
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              {...register('commissionRate')}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-            />
-          </div>
+        {/* MÉTRICAS CALCULADAS (editáveis) */}
+        <div className="border-t border-slate-200 pt-4">
+          <h4 className="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
+            <span className="text-blue-500">📊</span>
+            Métricas Calculadas (editáveis)
+          </h4>
+          <p className="text-xs text-slate-500 mb-3">
+            Estes valores são calculados automaticamente baseados no nicho e ROAS. Você pode ajustá-los manualmente.
+          </p>
+          
+          <div className="grid gap-4 md:grid-cols-3">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                CPL - Custo por Lead (R$)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                {...register('cpl', { valueAsNumber: true })}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50"
+              />
+              {errors.cpl && (
+                <p className="text-xs text-red-500 mt-1">{errors.cpl.message}</p>
+              )}
+            </div>
 
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Ticket Médio (R$)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                {...register('ticket', { valueAsNumber: true })}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50"
+              />
+              {errors.ticket && (
+                <p className="text-xs text-red-500 mt-1">{errors.ticket.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Taxa de Conversão (%)
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                {...register('conversionRate', { valueAsNumber: true })}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50"
+              />
+              {errors.conversionRate && (
+                <p className="text-xs text-red-500 mt-1">{errors.conversionRate.message}</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Tempo de Contrato (Meses)
@@ -181,10 +207,12 @@ export default function RoasForm({ onCalculate, defaultValues, branding }: RoasF
               type="number"
               {...register('contractMonths')}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              placeholder="Ex: 12"
             />
             {errors.contractMonths && (
               <p className="text-xs text-red-500 mt-1">{errors.contractMonths.message}</p>
             )}
+            <p className="text-xs text-slate-500 mt-1">Opcional: para ver projeção mês a mês</p>
           </div>
         </div>
 

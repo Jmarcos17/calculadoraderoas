@@ -382,11 +382,11 @@ function addCurrentAnalysis(
 
   // Tabela de inputs
   const inputData = [
-    ['Investimento Mensal', formatCurrency(input.investment)],
-    ['Ticket Médio', formatCurrency(input.ticket)],
-    ['Custo por Lead (CPL)', formatCurrency(input.cpl)],
-    ['Taxa de Conversão', `${input.conversionRate}%`],
-    ...(input.commissionRate ? [['Comissão', `${input.commissionRate}%`]] : []),
+    ['Investimento', formatCurrency(input.investment)],
+    ['Ticket Médio', formatCurrency(input.ticket || 0)],
+    ['CPL', formatCurrency(input.cpl || 0)],
+    ['Taxa de Conversão', `${input.conversionRate || 0}%`],
+    ...(input.targetRoas ? [['ROAS Desejado', `${input.targetRoas.toFixed(2)}x`]] : []),
   ];
 
   autoTable(doc, {

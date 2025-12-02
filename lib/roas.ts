@@ -1,22 +1,21 @@
 // Tipos base
 
-import { NicheId } from './niches';
+import { NicheId, getNicheById } from './niches';
 
 export type PeriodType = 'monthly' | 'daily';
 export type ScenarioType = 'optimistic' | 'realistic' | 'pessimistic';
 
 export interface RoasInput {
   investment: number;      // Investimento mensal em tráfego (R$)
-  ticket: number;          // Ticket médio (R$)
-  cpl: number;             // Custo por lead (R$)
-  conversionRate: number;  // Taxa de conversão (%) de lead para venda
+  targetRoas?: number;     // ROAS desejado (input principal para cálculo reverso)
+  ticket?: number;         // Ticket médio (R$) - calculado ou manual
+  cpl?: number;            // Custo por lead (R$) - calculado ou manual
+  conversionRate?: number; // Taxa de conversão (%) - calculada ou manual
   period: PeriodType;      // Mensal ou diário
-  commissionRate?: number; // Taxa de comissão (%) - opcional, descontada da receita
   agencyFee?: number;      // Mensalidade da Agência Genérica (R$)
   userAgencyFee?: number;  // Mensalidade da Agência do Usuário (R$)
-  targetRoas?: number;     // ROAS alvo para cálculo reverso de investimento
   targetRevenue?: number;  // Meta de faturamento para cálculo reverso (R$)
-  niche?: NicheId;         // Nicho selecionado (opcional)
+  niche?: NicheId;         // Nicho selecionado (usado para métricas de referência)
   contractMonths?: number; // Duração do contrato em meses (opcional)
   growthRate?: number;     // Taxa de crescimento mensal do investimento (%) (opcional)
   scenario?: ScenarioType; // Cenário (otimista/realista/pessimista) (opcional)
@@ -25,15 +24,19 @@ export interface RoasInput {
 export interface RoasOutput {
   leads: number;
   sales: number;
-  revenue: number;        // Receita líquida (após descontar comissão, se houver)
-  grossRevenue: number;   // Receita bruta (antes de descontar comissão)
-  commission: number;     // Valor total da comissão (R$)
-  roas: number;           // ROAS calculado com receita líquida
-  roi: number;            // ROI (%) = (Receita Líquida - Investimento) / Investimento * 100
+  revenue: number;        // Receita (faturamento bruto)
+  grossRevenue: number;   // Receita bruta (mesmo que revenue agora)
+  commission: number;     // Sempre 0 (removido)
+  roas: number;
+  roi: number;            // ROI (%) = (Receita - Investimento) / Investimento * 100
   costPerSale: number;
-  suggestedInvestment?: number; // Investimento sugerido para atingir o ROAS alvo
-  agencyRoi?: number;     // ROI considerando a taxa da agência genérica
-  userAgencyRoi?: number; // ROI considerando a taxa da agência do usuário
+  suggestedInvestment?: number;
+  agencyRoi?: number;
+  userAgencyRoi?: number;
+  // Métricas calculadas (para exibição)
+  calculatedCpl?: number;
+  calculatedTicket?: number;
+  calculatedConversionRate?: number;
 }
 
 export interface MonthlyProjection {
@@ -41,9 +44,9 @@ export interface MonthlyProjection {
   investment: number;
   leads: number;
   sales: number;
-  revenue: number;        // Receita líquida
-  grossRevenue: number;  // Receita bruta
-  commission: number;    // Comissão do mês
+  revenue: number;
+  grossRevenue: number;
+  commission: number;
   roas: number;
   cumulativeRevenue: number;
   cumulativeInvestment: number;
@@ -62,155 +65,158 @@ export interface ContractProjection {
   insights: string[];
 }
 
-// Funções de cálculo
+// ============================================================================
+// FUNÇÃO PRINCIPAL: CÁLCULO REVERSO DE ROAS
+// ============================================================================
+// Nova lógica: Usuário informa Investimento + ROAS desejado
+// Sistema calcula as métricas necessárias baseado no nicho
+// ============================================================================
 
-export function calculateRoas({
-  investment,
-  ticket,
-  cpl,
-  conversionRate,
-  period,
-  commissionRate = 0,
-  agencyFee,
-  userAgencyFee,
-  targetRoas,
-  targetRevenue,
-}: RoasInput): RoasOutput {
-  // Validação: garantir que CPL seja maior que zero
-  if (cpl <= 0) {
-    throw new Error('Custo por lead deve ser maior que zero');
-  }
-  
+export function calculateRoas(input: RoasInput): RoasOutput {
+  const {
+    investment,
+    targetRoas,
+    ticket,
+    cpl,
+    conversionRate,
+    period,
+    agencyFee,
+    userAgencyFee,
+    targetRevenue,
+    niche,
+  } = input;
+
   // Validação: garantir que investimento seja maior que zero
   if (investment <= 0) {
     throw new Error('Investimento deve ser maior que zero');
   }
-  
-  // Validação: garantir que taxa de comissão seja entre 0 e 100
-  if (commissionRate < 0 || commissionRate > 100) {
-    throw new Error('Taxa de comissão deve estar entre 0% e 100%');
-  }
-  
-  // ============================================================================
-  // IMPORTANTE: LÓGICA DE CÁLCULO MENSAL
-  // ============================================================================
-  // Todos os cálculos são feitos para 1 MÊS (30 dias).
-  // O investimento informado pelo usuário é SEMPRE mensal.
-  // 
-  // Se period = 'daily':
-  //   - O usuário informou investimento DIÁRIO
-  //   - Multiplicamos por 30 para obter o investimento MENSAL
-  //   - Todos os resultados (leads, vendas, revenue, ROAS) são MENSAIS
-  //
-  // Se period = 'monthly' (padrão):
-  //   - O usuário informou investimento MENSAL
-  //   - Usamos diretamente
-  //   - Todos os resultados são MENSAIS
-  //
-  // O tempo de contrato (contractMonths) é usado APENAS para:
-  //   ✅ Projeções mês a mês (gráficos e tabelas)
-  //   ✅ Visualização de crescimento
-  //   ❌ NÃO é usado para calcular os resultados principais
-  // ============================================================================
-  
+
+  // Normalizar período
   const normalizedPeriod = (period === 'daily' || period === 'monthly') ? period : 'monthly';
-  const baseInvestment =
-    normalizedPeriod === 'monthly' ? investment : investment * 30;
-  
-  // 1. LEADS MENSAIS = Investimento Mensal / CPL
-  // Exemplo: R$ 3.000 / R$ 50 = 60 leads/mês
-  const leads = baseInvestment / cpl;
-  
-  // 2. VENDAS MENSAIS = Leads Mensais × Taxa de Conversão
-  // Exemplo: 60 × 3% = 1.8 vendas/mês
-  const sales = leads * (conversionRate / 100);
-  
-  // 3. FATURAMENTO BRUTO MENSAL = Vendas Mensais × Ticket Médio
-  // Exemplo: 1.8 × R$ 200 = R$ 360/mês
-  const grossRevenue = sales * ticket;
-  
-  // 4. COMISSÃO MENSAL = Faturamento Bruto Mensal × Taxa de Comissão
-  // Exemplo: R$ 360 × 0% = R$ 0/mês
-  const commission = grossRevenue * (commissionRate / 100);
-  
-  // 5. RECEITA LÍQUIDA MENSAL = Faturamento Bruto - Comissão
-  // Exemplo: R$ 360 - R$ 0 = R$ 360/mês
-  const revenue = grossRevenue - commission;
-  
-  // 6. ROAS MENSAL = Faturamento Bruto Mensal / Investimento Mensal
-  // Exemplo: R$ 360 / R$ 3.000 = 0.12x
-  // Significa: Para cada R$1 investido, voltam R$0.12 por mês
-  const roas = baseInvestment > 0 ? grossRevenue / baseInvestment : 0;
-  
-  // 7. CPA (Custo Por Aquisição) = Investimento Mensal / Vendas Mensais
-  // Exemplo: R$ 3.000 / 1.8 = R$ 1.666,67 por venda
-  const costPerSale = sales > 0 ? baseInvestment / sales : 0;
+  const baseInvestment = normalizedPeriod === 'monthly' ? investment : investment * 30;
 
-  // 8. ROI MENSAL (%) = ((Receita Líquida - Investimento) / Investimento) × 100
-  // Exemplo: ((R$ 360 - R$ 3.000) / R$ 3.000) × 100 = -88%
-  // ROI considera o retorno líquido (após comissão)
-  const roi = baseInvestment > 0 ? ((revenue - baseInvestment) / baseInvestment) * 100 : 0;
+  // ============================================================================
+  // CÁLCULO REVERSO: A partir de Investimento + ROAS
+  // ============================================================================
+  
+  let finalRoas: number;
+  let finalRevenue: number;
+  let finalCpl: number;
+  let finalTicket: number;
+  let finalConversionRate: number;
+  let finalLeads: number;
+  let finalSales: number;
 
-  // Cálculo de ROI com taxas de agência (se fornecidas)
+  // Obter métricas de referência do nicho (se disponível)
+  const nicheBenchmark = niche ? getNicheById(niche) : null;
+
+  if (targetRoas && targetRoas > 0) {
+    // ========================================================================
+    // MODO 1: CÁLCULO REVERSO A PARTIR DO ROAS DESEJADO
+    // ========================================================================
+    // Usuário informou: Investimento + ROAS desejado
+    // Calculamos: Faturamento e métricas baseadas no nicho
+    // ========================================================================
+    
+    finalRoas = targetRoas;
+    finalRevenue = baseInvestment * targetRoas;
+
+    // Usar métricas do nicho como base (ou valores fornecidos manualmente)
+    finalCpl = cpl ?? nicheBenchmark?.avgCpl ?? 20;
+    finalTicket = ticket ?? nicheBenchmark?.avgTicket ?? 500;
+    
+    // Calcular leads a partir do investimento e CPL
+    finalLeads = baseInvestment / finalCpl;
+    
+    // Calcular vendas a partir do faturamento e ticket
+    finalSales = finalRevenue / finalTicket;
+    
+    // Calcular taxa de conversão real necessária
+    finalConversionRate = finalLeads > 0 ? (finalSales / finalLeads) * 100 : 0;
+    
+  } else if (ticket && cpl && conversionRate) {
+    // ========================================================================
+    // MODO 2: CÁLCULO TRADICIONAL (se métricas foram fornecidas manualmente)
+    // ========================================================================
+    
+    finalCpl = cpl;
+    finalTicket = ticket;
+    finalConversionRate = conversionRate;
+    
+    // Validações
+    if (finalCpl <= 0) {
+      throw new Error('Custo por lead deve ser maior que zero');
+    }
+    
+    if (finalConversionRate <= 0 || finalConversionRate > 100) {
+      throw new Error('Taxa de conversão deve estar entre 0% e 100%');
+    }
+    
+    // Cálculos tradicionais
+    finalLeads = baseInvestment / finalCpl;
+    finalSales = finalLeads * (finalConversionRate / 100);
+    finalRevenue = finalSales * finalTicket;
+    finalRoas = baseInvestment > 0 ? finalRevenue / baseInvestment : 0;
+    
+  } else {
+    // ========================================================================
+    // MODO 3: USAR APENAS MÉTRICAS DO NICHO (fallback)
+    // ========================================================================
+    
+    if (!nicheBenchmark) {
+      throw new Error('Informe o ROAS desejado ou as métricas (CPL, Ticket, Conversão)');
+    }
+    
+    finalCpl = nicheBenchmark.avgCpl;
+    finalTicket = nicheBenchmark.avgTicket;
+    finalConversionRate = nicheBenchmark.avgConversionRate;
+    
+    finalLeads = baseInvestment / finalCpl;
+    finalSales = finalLeads * (finalConversionRate / 100);
+    finalRevenue = finalSales * finalTicket;
+    finalRoas = baseInvestment > 0 ? finalRevenue / baseInvestment : 0;
+  }
+
+  // Cálculos derivados
+  const costPerSale = finalSales > 0 ? baseInvestment / finalSales : 0;
+  const roi = baseInvestment > 0 ? ((finalRevenue - baseInvestment) / baseInvestment) * 100 : 0;
+
+  // ROI com taxas de agência
   let agencyRoi: number | undefined;
   let userAgencyRoi: number | undefined;
 
   if (agencyFee !== undefined) {
     const totalCost = baseInvestment + agencyFee;
-    agencyRoi = totalCost > 0 ? ((revenue - totalCost) / totalCost) * 100 : 0;
+    agencyRoi = totalCost > 0 ? ((finalRevenue - totalCost) / totalCost) * 100 : 0;
   }
 
   if (userAgencyFee !== undefined) {
     const totalCost = baseInvestment + userAgencyFee;
-    userAgencyRoi = totalCost > 0 ? ((revenue - totalCost) / totalCost) * 100 : 0;
+    userAgencyRoi = totalCost > 0 ? ((finalRevenue - totalCost) / totalCost) * 100 : 0;
   }
 
-  // Cálculo Reverso: Sugestão de Investimento
+  // Cálculo de investimento sugerido (se meta de faturamento foi informada)
   let suggestedInvestment: number | undefined;
 
-  // Opção 1: Se o usuário forneceu uma meta de faturamento
-  if (targetRevenue && targetRevenue > 0) {
-    // Fórmula inversa:
-    // GrossRevenue = (Investment / CPL) * (conversionRate / 100) * ticket
-    // Logo: Investment = (targetRevenue * CPL * 100) / (conversionRate * ticket)
-
-    const conversionDecimal = conversionRate / 100;
-    if (conversionDecimal > 0 && ticket > 0) {
-      const grossInvestmentNeeded = (targetRevenue * cpl * 100) / (conversionRate * ticket);
-      suggestedInvestment = grossInvestmentNeeded > 0 ? grossInvestmentNeeded : undefined;
-    }
-  }
-  // Opção 2: Se o usuário forneceu um ROAS alvo (mas sem meta de receita)
-  else if (targetRoas && targetRoas > 0 && baseInvestment > 0) {
-    // Com ROAS alvo, podemos calcular a receita esperada com o investimento atual
-    // e depois sugerir quanto investir para dobrar, triplicar, etc.
-    // Mas sem uma meta clara, vamos calcular o investimento que manteria o mesmo ROAS
-    // mas com uma receita específica (ex: 2x a receita atual)
-
-    // Por exemplo: Se o ROAS alvo é maior que o ROAS atual,
-    // significa que o usuário precisa melhorar eficiência, não escalar investimento.
-    // Se o ROAS alvo é menor, pode escalar.
-
-    // Vamos calcular: "Quanto investir para ter o dobro de receita mantendo o ROAS atual?"
-    const targetRevenueFor2x = grossRevenue * 2;
-    const conversionDecimal = conversionRate / 100;
-    if (conversionDecimal > 0 && ticket > 0) {
-      suggestedInvestment = (targetRevenueFor2x * cpl * 100) / (conversionRate * ticket);
-    }
+  if (targetRevenue && targetRevenue > 0 && finalRoas > 0) {
+    suggestedInvestment = targetRevenue / finalRoas;
   }
 
   return {
-    leads,
-    sales,
-    revenue,
-    grossRevenue,
-    commission,
-    roas,
+    leads: finalLeads,
+    sales: finalSales,
+    revenue: finalRevenue,
+    grossRevenue: finalRevenue,
+    commission: 0, // Removido
+    roas: finalRoas,
     roi,
     costPerSale,
     agencyRoi,
     userAgencyRoi,
     suggestedInvestment,
+    calculatedCpl: finalCpl,
+    calculatedTicket: finalTicket,
+    calculatedConversionRate: finalConversionRate,
   };
 }
 
@@ -225,18 +231,14 @@ export function calculateContractProjection(
   let cumulativeInvestment = 0;
 
   for (let month = 1; month <= contractMonths; month++) {
-    // Aplicar crescimento composto no investimento
-    // IMPORTANTE: O investimento aqui já deve estar no formato correto (mensal ou diário)
-    // conforme o período especificado no input
     const monthInvestment = input.investment * Math.pow(1 + growthRate / 100, month - 1);
     const monthResult = calculateRoas({
       ...input,
       investment: monthInvestment,
-      // Garantir que o período seja preservado corretamente
       period: input.period || 'monthly',
     });
 
-    cumulativeRevenue += monthResult.grossRevenue; // Acumular Receita Bruta ou Líquida? Geralmente Bruta para faturamento.
+    cumulativeRevenue += monthResult.grossRevenue;
     cumulativeInvestment += monthInvestment;
 
     monthly.push({
@@ -246,7 +248,7 @@ export function calculateContractProjection(
       sales: monthResult.sales,
       revenue: monthResult.revenue,
       grossRevenue: monthResult.grossRevenue,
-      commission: monthResult.commission,
+      commission: 0,
       roas: monthResult.roas,
       cumulativeRevenue,
       cumulativeInvestment,
@@ -262,13 +264,11 @@ export function calculateContractProjection(
     finalRoas: monthly[monthly.length - 1]?.roas || 0,
   };
 
-  // Gerar insights
   const insights = generateInsights(monthly, total, contractMonths);
 
   return { monthly, total, insights };
 }
 
-// Função para gerar insights automáticos
 function generateInsights(
   monthly: MonthlyProjection[],
   total: ContractProjection['total'],
@@ -276,7 +276,6 @@ function generateInsights(
 ): string[] {
   const insights: string[] = [];
 
-  // Insight sobre crescimento
   if (monthly.length > 1) {
     const firstMonth = monthly[0];
     const lastMonth = monthly[monthly.length - 1];
@@ -284,20 +283,16 @@ function generateInsights(
     insights.push(`Crescimento de ${revenueGrowth}% no faturamento do primeiro ao último mês`);
   }
 
-  // Insight sobre ROI
-  // ROI usa receita líquida
   const totalNetRevenue = monthly.reduce((sum, m) => sum + m.revenue, 0);
   const roi = ((totalNetRevenue - total.totalInvestment) / total.totalInvestment * 100).toFixed(1);
   insights.push(`ROI total de ${roi}% sobre o investimento de ${months} meses`);
 
-  // Insight sobre média mensal
   const avgMonthlyRevenue = (total.totalRevenue / months).toLocaleString('pt-BR', {
     style: 'currency',
     currency: 'BRL',
   });
   insights.push(`Faturamento médio mensal de ${avgMonthlyRevenue}`);
 
-  // Insight sobre melhor mês
   const bestMonth = monthly.reduce((best, current) =>
     current.grossRevenue > best.grossRevenue ? current : best
   );
@@ -306,7 +301,6 @@ function generateInsights(
     currency: 'BRL',
   })}`);
 
-  // Insight sobre pior mês
   const worstMonth = monthly.reduce((worst, current) =>
     current.grossRevenue < worst.grossRevenue ? current : worst
   );
@@ -317,7 +311,6 @@ function generateInsights(
     })}`);
   }
 
-  // Insight sobre lucro líquido
   const netProfit = totalNetRevenue - total.totalInvestment;
   if (netProfit > 0) {
     insights.push(`Lucro líquido total de ${netProfit.toLocaleString('pt-BR', {
@@ -336,26 +329,41 @@ export function applyScenario(
 ): RoasInput {
   const baseInput = { ...input };
   
+  // Se estiver usando ROAS como input, ajustar o ROAS
+  if (baseInput.targetRoas) {
+    switch (scenario) {
+      case 'optimistic':
+        return {
+          ...baseInput,
+          targetRoas: baseInput.targetRoas * 1.3, // +30% ROAS
+        };
+      case 'pessimistic':
+        return {
+          ...baseInput,
+          targetRoas: baseInput.targetRoas * 0.75, // -25% ROAS
+        };
+      case 'realistic':
+      default:
+        return baseInput;
+    }
+  }
+  
+  // Se estiver usando métricas tradicionais, ajustar CPL e conversão
   switch (scenario) {
     case 'optimistic':
-      // Cenário otimista: -15% CPL, +30% conversão (Ticket mantido)
       return {
         ...baseInput,
-        cpl: baseInput.cpl * 0.85,
-        conversionRate: baseInput.conversionRate * 1.3,
+        cpl: baseInput.cpl ? baseInput.cpl * 0.85 : undefined,
+        conversionRate: baseInput.conversionRate ? baseInput.conversionRate * 1.3 : undefined,
       };
-    
     case 'pessimistic':
-      // Cenário pessimista: +20% CPL, -25% conversão (Ticket mantido)
       return {
         ...baseInput,
-        cpl: baseInput.cpl * 1.2,
-        conversionRate: baseInput.conversionRate * 0.75,
+        cpl: baseInput.cpl ? baseInput.cpl * 1.2 : undefined,
+        conversionRate: baseInput.conversionRate ? baseInput.conversionRate * 0.75 : undefined,
       };
-    
     case 'realistic':
     default:
-      // Cenário realista: usa os valores originais
       return baseInput;
   }
 }
@@ -378,4 +386,3 @@ export function calculateScenarios(
     pessimistic: calculateRoas(pessimisticInput),
   };
 }
-

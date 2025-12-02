@@ -50,9 +50,8 @@ export default function RoasResults({ results, input, benchmarks, branding, onSc
 
   const { revenue, leads, sales, roas, costPerSale } = results;
   const grossRevenue = results.grossRevenue ?? revenue;
-  const commission = results.commission ?? 0;
+  const commission = 0; // Sempre 0 agora
   const niche = input.niche ? getNicheById(input.niche) : null;
-  const hasCommission = (input.commissionRate || 0) > 0 || commission > 0;
   
   const effectiveBenchmarks = benchmarks || (niche && niche.id !== 'custom' ? {
     goodRoas: niche.goodRoas,
@@ -106,11 +105,6 @@ export default function RoasResults({ results, input, benchmarks, branding, onSc
               {formatCurrency(grossRevenue)}
               <span className="text-lg font-normal text-white/70 ml-2">/mês</span>
             </h3>
-            {hasCommission && (
-              <p className="text-white/90 text-sm mt-2 font-medium">
-                Líquido: {formatCurrency(revenue)}/mês
-              </p>
-            )}
           </div>
           <DollarSign className="absolute right-4 bottom-4 w-24 h-24 text-white/10 rotate-[-15deg]" />
         </div>
@@ -203,18 +197,6 @@ export default function RoasResults({ results, input, benchmarks, branding, onSc
               {results.roi.toFixed(1)}%
             </p>
           </div>
-          {hasCommission && (
-            <>
-              <div>
-                <p className="text-xs text-slate-500 mb-1">Faturamento Bruto</p>
-                <p className="text-lg font-semibold text-slate-700">{formatCurrency(grossRevenue)}<span className="text-sm text-slate-500">/mês</span></p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 mb-1">Comissão Agência</p>
-                <p className="text-lg font-semibold text-slate-700">{formatCurrency(commission)}<span className="text-sm text-slate-500">/mês</span></p>
-              </div>
-            </>
-          )}
         </div>
       </div>
 

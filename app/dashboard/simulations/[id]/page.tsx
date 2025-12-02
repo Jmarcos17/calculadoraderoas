@@ -15,9 +15,10 @@ interface Simulation {
   id: string;
   inputData: {
     investment: number;
-    ticket: number;
-    cpl: number;
-    conversionRate: number;
+    targetRoas?: number;
+    ticket?: number;
+    cpl?: number;
+    conversionRate?: number;
     period: 'monthly' | 'daily';
     niche?: string;
     commissionRate?: number;  // Opcional para compatibilidade com simulações antigas
@@ -92,8 +93,9 @@ export default function SimulationDetailPage() {
     if (!simulation) return;
     
     // Salvar dados no localStorage para reabrir na calculadora
+    const { commissionRate, ...inputDataWithoutCommissionRate } = simulation.inputData; // Destructure to remove commissionRate
     const dataToReopen = {
-      ...simulation.inputData,
+      ...inputDataWithoutCommissionRate, // Use the new object without commissionRate
       results: simulation.results,
       projectionData: simulation.projectionData,
     };
@@ -135,10 +137,11 @@ export default function SimulationDetailPage() {
     cpl: simulation.inputData.cpl,
     conversionRate: simulation.inputData.conversionRate,
     period: simulation.inputData.period,
-    commissionRate: simulation.inputData.commissionRate,
+    // commissionRate: simulation.inputData.commissionRate, // Removed from RoasInput construction
     niche: simulation.inputData.niche as any,
     contractMonths: simulation.inputData.contractMonths,
     growthRate: simulation.inputData.growthRate,
+    targetRoas: simulation.inputData.targetRoas, // Added targetRoas
   };
 
   return (
@@ -221,19 +224,19 @@ export default function SimulationDetailPage() {
           <div>
             <p className="text-xs text-slate-500 mb-1">Ticket Médio</p>
             <p className="text-sm font-medium text-slate-900">
-              {formatCurrency(simulation.inputData.ticket)}
+              {formatCurrency(simulation.inputData.ticket || 0)}
             </p>
           </div>
           <div>
             <p className="text-xs text-slate-500 mb-1">CPL</p>
             <p className="text-sm font-medium text-slate-900">
-              {formatCurrency(simulation.inputData.cpl)}
+              {formatCurrency(simulation.inputData.cpl || 0)}
             </p>
           </div>
           <div>
             <p className="text-xs text-slate-500 mb-1">Taxa de Conversão</p>
             <p className="text-sm font-medium text-slate-900">
-              {simulation.inputData.conversionRate}%
+              {simulation.inputData.conversionRate || 0}%
             </p>
           </div>
           <div>

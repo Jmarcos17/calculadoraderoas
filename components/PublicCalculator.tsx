@@ -106,11 +106,11 @@ export default function PublicCalculator({
         body: JSON.stringify({
           inputData: {
             investment: data.investment,
+            targetRoas: data.targetRoas,
             ticket: data.ticket,
             cpl: data.cpl,
             conversionRate: data.conversionRate,
             period: data.period,
-            commissionRate: data.commissionRate,
             niche: data.niche,
             contractMonths: data.contractMonths,
             growthRate: data.growthRate,
