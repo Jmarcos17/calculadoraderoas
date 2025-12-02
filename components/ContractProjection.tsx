@@ -440,11 +440,6 @@ export default function ContractProjectionView({
                 labelFormatter={(label) => `${label}° mês`}
               />
               <Legend />
-              <Bar
-                dataKey="semAgencia"
-                fill="#94a3b8"
-                name="Sem Agência"
-              />
               {input.agencyFee && (
                 <Bar
                   dataKey="agenciaConcorrente"
