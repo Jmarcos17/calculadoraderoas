@@ -1,5 +1,12 @@
-// components/RoasResults.tsx
-"use client";
+import { 
+  TrendingUp, 
+  Users, 
+  ShoppingCart, 
+  DollarSign, 
+  Target, 
+  Percent, 
+  Briefcase 
+} from 'lucide-react';
 
 import { RoasOutput, RoasInput } from '@/lib/roas';
 import { getNicheById } from '@/lib/niches';
@@ -29,47 +36,42 @@ const formatCurrency = (value: number) =>
 export default function RoasResults({ results, input, benchmarks, branding }: RoasResultsProps) {
   if (!results || !input) {
     return (
-      <div className="flex items-center justify-center h-full text-sm text-slate-400 border border-dashed border-slate-200 rounded-xl p-4">
-        Preencha os dados e clique em &quot;Calcular&quot; para ver a projeção.
+      <div className="flex flex-col items-center justify-center h-64 text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl p-8 bg-slate-50/50">
+        <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+          <TrendingUp className="w-8 h-8 text-slate-300" />
+        </div>
+        <p className="text-center font-medium">Preencha os dados ao lado para gerar sua projeção personalizada.</p>
       </div>
     );
   }
 
   const { revenue, leads, sales, roas, costPerSale } = results;
-  // Campos opcionais para compatibilidade com simulações antigas
   const grossRevenue = results.grossRevenue ?? revenue;
   const commission = results.commission ?? 0;
   const niche = input.niche ? getNicheById(input.niche) : null;
   const hasCommission = (input.commissionRate || 0) > 0 || commission > 0;
   
-  // Usar benchmarks customizados se fornecidos, senão usar do nicho
   const effectiveBenchmarks = benchmarks || (niche && niche.id !== 'custom' ? {
     goodRoas: niche.goodRoas,
     excellentRoas: niche.excellentRoas,
     avgRoas: niche.avgRoas,
   } : null);
   
-  // Determinar performance
   let performance: 'excellent' | 'good' | 'average' | 'below-average' = 'average';
-  let vsMarket: 'above' | 'below' | 'average' = 'average';
   let marketComparison = '';
   
   if (effectiveBenchmarks) {
     if (roas >= effectiveBenchmarks.excellentRoas) {
       performance = 'excellent';
-      vsMarket = 'above';
       marketComparison = `+${((roas / effectiveBenchmarks.avgRoas - 1) * 100).toFixed(0)}% vs mercado`;
     } else if (roas >= effectiveBenchmarks.goodRoas) {
       performance = 'good';
-      vsMarket = 'above';
       marketComparison = `+${((roas / effectiveBenchmarks.avgRoas - 1) * 100).toFixed(0)}% vs mercado`;
     } else if (roas >= effectiveBenchmarks.avgRoas) {
       performance = 'average';
-      vsMarket = 'average';
       marketComparison = 'Na média do mercado';
     } else {
       performance = 'below-average';
-      vsMarket = 'below';
       marketComparison = `${((roas / effectiveBenchmarks.avgRoas - 1) * 100).toFixed(0)}% vs mercado`;
     }
   }
@@ -78,167 +80,167 @@ export default function RoasResults({ results, input, benchmarks, branding }: Ro
   const secondaryColor = branding?.secondaryColor || '#64748b';
 
   return (
-    <section className="space-y-3">
-      {/* Card de Performance vs Mercado */}
-      {effectiveBenchmarks && (
-        <div className={`rounded-xl border p-4 ${
-          performance === 'excellent' ? 'border-green-200 bg-green-50' :
-          performance === 'good' ? 'border-blue-200 bg-blue-50' :
-          performance === 'average' ? 'border-yellow-200 bg-yellow-50' :
-          'border-red-200 bg-red-50'
-        }`}>
-          <p className="text-xs text-slate-600 mb-1">
-            Performance vs Mercado {niche && niche.id !== 'custom' ? `(${niche.name})` : ''}
-          </p>
-          <p className="text-lg font-semibold text-slate-900">
-            {performance === 'excellent' && '⭐ Excelente'}
-            {performance === 'good' && '✓ Bom'}
-            {performance === 'average' && '→ Na média'}
-            {performance === 'below-average' && '⚠ Abaixo da média'}
-          </p>
-          <p className="text-xs text-slate-500 mt-1">
-            ROAS médio do mercado: {effectiveBenchmarks.avgRoas.toFixed(2)}x | 
-            Seu ROAS: {roas.toFixed(2)}x
-          </p>
-        </div>
-      )}
-
-      <div className="grid gap-3 md:grid-cols-2">
-        <ResultCard
-          label={hasCommission ? "Faturamento líquido" : "Faturamento estimado"}
-          value={formatCurrency(revenue)}
-          highlight
-          primaryColor={primaryColor}
-        />
-        <ResultCard
-          label="ROAS"
-          value={`${roas.toFixed(2)}x`}
-          highlight
-          primaryColor={primaryColor}
-          badge={effectiveBenchmarks ? {
-            text: marketComparison,
-            type: performance
-          } : undefined}
-        />
-      </div>
-      {hasCommission && (
-        <div className="grid gap-3 md:grid-cols-2 border border-slate-200 rounded-xl p-3 bg-slate-50">
-          <ResultCard
-            label="Faturamento bruto"
-            value={formatCurrency(grossRevenue)}
-          />
-          <ResultCard
-            label="Comissão descontada"
-            value={formatCurrency(commission)}
-          />
-        </div>
-      )}
-      <div className="grid gap-3 md:grid-cols-3">
-        <ResultCard label="Leads estimados" value={Math.round(leads).toString()} />
-        <ResultCard label="Vendas estimadas" value={Math.round(sales).toString()} />
-        <ResultCard
-          label="Custo por venda"
-          value={formatCurrency(costPerSale)}
-        />
-        <ResultCard
-          label="ROI (Retorno sobre Investimento)"
-          value={`${results.roi.toFixed(1)}%`}
-          highlight
-          primaryColor={primaryColor}
-        />
-      </div>
-
-      {/* Comparação de Agências */}
-      {(results.agencyRoi !== undefined || results.userAgencyRoi !== undefined) && (
-        <div className="border border-slate-200 rounded-xl p-4 bg-white mt-4">
-          <h3 className="text-sm font-semibold text-slate-900 mb-3">
-            Comparação de ROI com Agências
-          </h3>
-          <div className="grid gap-4 md:grid-cols-2">
-            {results.agencyRoi !== undefined && (
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
-                <p className="text-xs text-slate-500 mb-1">Agência Genérica</p>
-                <p className={`text-lg font-semibold ${results.agencyRoi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {results.agencyRoi.toFixed(1)}% ROI
-                </p>
-                <p className="text-xs text-slate-400 mt-1">
-                  Considerando mensalidade
-                </p>
-              </div>
-            )}
-            {results.userAgencyRoi !== undefined && (
-              <div 
-                className="p-3 rounded-lg border"
-                style={{ 
-                  backgroundColor: `${primaryColor}10`, // 10% opacity
-                  borderColor: `${primaryColor}40` // 40% opacity
-                }}
-              >
-                <p className="text-xs font-medium mb-1" style={{ color: primaryColor }}>Sua Agência</p>
-                <p className={`text-lg font-semibold ${results.userAgencyRoi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {results.userAgencyRoi.toFixed(1)}% ROI
-                </p>
-                <p className="text-xs opacity-80 mt-1" style={{ color: primaryColor }}>
-                  Considerando sua mensalidade
-                </p>
-              </div>
+    <section className="space-y-8">
+      {/* 1. Destaque Principal (Revenue & ROAS) */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <div 
+          className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg transition-transform hover:scale-[1.02]"
+          style={{ 
+            background: `linear-gradient(135deg, ${primaryColor}, ${branding?.accentColor || secondaryColor})` 
+          }}
+        >
+          <div className="relative z-10">
+            <p className="text-white/80 text-sm font-medium mb-1">Faturamento Projetado</p>
+            <h3 className="text-3xl md:text-4xl font-bold tracking-tight">
+              {formatCurrency(revenue)}
+            </h3>
+            {hasCommission && (
+              <p className="text-white/60 text-xs mt-2">
+                Líquido (após comissão)
+              </p>
             )}
           </div>
-          {results.agencyRoi !== undefined && results.userAgencyRoi !== undefined && (
-            <div className="mt-3 text-center">
-              <p className="text-sm text-slate-600">
-                Diferença de ROI: <span className="font-bold text-green-600">
-                  {((results.userAgencyRoi - results.agencyRoi)).toFixed(1)}%
-                </span> a favor da sua agência
-              </p>
+          <DollarSign className="absolute right-4 bottom-4 w-24 h-24 text-white/10 rotate-[-15deg]" />
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col justify-center relative overflow-hidden group">
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-slate-500 text-sm font-medium">ROAS (Retorno)</p>
+              {effectiveBenchmarks && (
+                <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                  performance === 'excellent' ? 'bg-green-100 text-green-700' :
+                  performance === 'good' ? 'bg-blue-100 text-blue-700' :
+                  performance === 'average' ? 'bg-yellow-100 text-yellow-700' :
+                  'bg-red-100 text-red-700'
+                }`}>
+                  {marketComparison}
+                </span>
+              )}
             </div>
+            <h3 className="text-3xl md:text-4xl font-bold text-slate-900">
+              {roas.toFixed(2)}x
+            </h3>
+            <p className="text-slate-400 text-xs mt-2">
+              Para cada R$1 investido, voltam R${roas.toFixed(2)}
+            </p>
+          </div>
+          <TrendingUp 
+            className="absolute right-4 bottom-4 w-20 h-20 text-slate-50 group-hover:text-slate-100 transition-colors" 
+            style={{ color: `${primaryColor}10` }}
+          />
+        </div>
+      </div>
+
+      {/* 2. Métricas de Eficiência (Grid 3 colunas) */}
+      <div>
+        <h4 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+          <Target className="w-4 h-4 text-slate-400" />
+          Eficiência do Funil
+        </h4>
+        <div className="grid gap-4 md:grid-cols-3">
+          <MetricCard 
+            label="Leads Estimados" 
+            value={Math.round(leads).toString()} 
+            icon={Users}
+            subtext="Potenciais clientes"
+          />
+          <MetricCard 
+            label="Vendas Projetadas" 
+            value={Math.round(sales).toString()} 
+            icon={ShoppingCart}
+            subtext={`Conv. ${input.conversionRate}%`}
+          />
+          <MetricCard 
+            label="Custo por Venda" 
+            value={formatCurrency(costPerSale)} 
+            icon={DollarSign}
+            subtext="CPA Médio"
+          />
+        </div>
+      </div>
+
+      {/* 3. Detalhamento Financeiro (Se houver comissão ou ROI alto) */}
+      <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
+        <h4 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+          <Briefcase className="w-4 h-4 text-slate-400" />
+          Análise Financeira
+        </h4>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <p className="text-xs text-slate-500 mb-1">Investimento</p>
+            <p className="text-lg font-semibold text-slate-900">{formatCurrency(input.investment)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500 mb-1">ROI (Retorno Líquido)</p>
+            <p className={`text-lg font-bold ${results.roi > 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {results.roi.toFixed(1)}%
+            </p>
+          </div>
+          {hasCommission && (
+            <>
+              <div>
+                <p className="text-xs text-slate-500 mb-1">Faturamento Bruto</p>
+                <p className="text-lg font-semibold text-slate-700">{formatCurrency(grossRevenue)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 mb-1">Comissão Agência</p>
+                <p className="text-lg font-semibold text-slate-700">{formatCurrency(commission)}</p>
+              </div>
+            </>
           )}
         </div>
+      </div>
+
+      {/* 4. Comparativo de Agências (Se disponível) */}
+      {(results.agencyRoi !== undefined || results.userAgencyRoi !== undefined) && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 relative overflow-hidden">
+          <div className="relative z-10">
+            <h3 className="text-base font-semibold text-slate-900 mb-4">
+              Por que escolher nossa agência?
+            </h3>
+            <div className="grid gap-4 md:grid-cols-2 items-center">
+              {results.agencyRoi !== undefined && (
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 opacity-70">
+                  <p className="text-xs text-slate-500 mb-1">Agência Comum</p>
+                  <p className="text-xl font-bold text-slate-600">
+                    {results.agencyRoi.toFixed(1)}% ROI
+                  </p>
+                </div>
+              )}
+              {results.userAgencyRoi !== undefined && (
+                <div 
+                  className="p-4 rounded-xl border-2 bg-white shadow-sm transform scale-105"
+                  style={{ borderColor: primaryColor }}
+                >
+                  <p className="text-xs font-bold mb-1" style={{ color: primaryColor }}>COM NOSSA ESTRATÉGIA</p>
+                  <p className="text-2xl font-bold text-slate-900">
+                    {results.userAgencyRoi.toFixed(1)}% ROI
+                  </p>
+                  <p className="text-xs text-green-600 font-medium mt-1">
+                    +{((results.userAgencyRoi - (results.agencyRoi || 0))).toFixed(1)}% de lucro extra
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
-      {/* Aqui depois você pode colocar cenários (pessimista/realista/otimista) */}
     </section>
   );
 }
 
-interface ResultCardProps {
-  label: string;
-  value: string;
-  highlight?: boolean;
-  primaryColor?: string;
-  badge?: {
-    text: string;
-    type: 'excellent' | 'good' | 'average' | 'below-average';
-  };
-}
-
-function ResultCard({ label, value, highlight, primaryColor, badge }: ResultCardProps) {
+function MetricCard({ label, value, icon: Icon, subtext }: { label: string, value: string, icon: any, subtext?: string }) {
   return (
-    <div
-      className={`rounded-xl border p-3 md:p-4 ${
-        !highlight ? 'border-slate-200 bg-white' : ''
-      }`}
-      style={highlight && primaryColor ? {
-        backgroundColor: `${primaryColor}15`, // 15% opacity
-        borderColor: `${primaryColor}40`
-      } : highlight ? {
-        backgroundColor: '#f0f9ff', // fallback sky-50
-        borderColor: '#bae6fd' // fallback sky-200
-      } : {}}
-    >
-      <p className="text-xs text-slate-500 mb-1">{label}</p>
-      <p className="text-lg md:text-xl font-semibold text-slate-900">
-        {value}
-      </p>
-      {badge && (
-        <p className={`text-xs mt-1 ${
-          badge.type === 'excellent' ? 'text-green-600' :
-          badge.type === 'good' ? 'text-blue-600' :
-          badge.type === 'average' ? 'text-yellow-600' :
-          'text-red-600'
-        }`}>
-          {badge.text}
-        </p>
-      )}
+    <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-start gap-4 hover:shadow-md transition-shadow">
+      <div className="p-2 rounded-lg bg-slate-50 text-slate-400">
+        <Icon className="w-5 h-5" />
+      </div>
+      <div>
+        <p className="text-xs text-slate-500 font-medium">{label}</p>
+        <p className="text-lg font-bold text-slate-900">{value}</p>
+        {subtext && <p className="text-[10px] text-slate-400 mt-0.5">{subtext}</p>}
+      </div>
     </div>
   );
 }
