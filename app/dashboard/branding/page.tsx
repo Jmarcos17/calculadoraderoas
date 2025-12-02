@@ -199,11 +199,11 @@ export default function BrandingPage() {
         </form>
 
         {/* Preview */}
-        <div className="space-y-6">
+        <div className="space-y-6 lg:sticky lg:top-6 self-start">
           <h2 className="text-lg font-semibold text-slate-900">Pré-visualização</h2>
           
           <div 
-            className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden relative"
+            className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden relative transition-all duration-300"
             style={{
               background: `linear-gradient(135deg, ${branding.primaryColor}0d 0%, #ffffff 100%)`
             }}
@@ -225,7 +225,7 @@ export default function BrandingPage() {
                   />
                 ) : (
                   <div 
-                    className="h-12 w-12 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-md"
+                    className="h-12 w-12 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-md shrink-0"
                     style={{ background: `linear-gradient(135deg, ${branding.primaryColor}, ${branding.accentColor})` }}
                   >
                     {branding.companyName ? branding.companyName.charAt(0).toUpperCase() : 'L'}
