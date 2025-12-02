@@ -9,7 +9,10 @@ export const roasFormSchema = z.object({
   period: z.enum(['monthly', 'daily']),
   commissionRate: z.coerce.number().min(0).max(100).optional().default(0),
   niche: z.string().optional(),
-  contractMonths: z.coerce.number().int().min(1).max(60).optional(),
+  contractMonths: z.preprocess(
+    (val) => (val === '' || val === 0 ? undefined : val),
+    z.coerce.number().int().min(1, 'Mínimo de 1 mês').max(60, 'Máximo de 60 meses').optional()
+  ),
   growthRate: z.coerce.number().min(0).optional(),
   scenario: z.enum(['optimistic', 'realistic', 'pessimistic']).optional().default('realistic'),
   agencyFee: z.coerce.number().min(0).optional(),

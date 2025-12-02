@@ -166,7 +166,7 @@ export default function RoasForm({ onCalculate, defaultValues, branding }: RoasF
             <input
               type="number"
               step="0.1"
-              {...register('commissionRate', { valueAsNumber: true })}
+              {...register('commissionRate')}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
             />
           </div>
@@ -177,9 +177,12 @@ export default function RoasForm({ onCalculate, defaultValues, branding }: RoasF
             </label>
             <input
               type="number"
-              {...register('contractMonths', { valueAsNumber: true })}
+              {...register('contractMonths')}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
             />
+            {errors.contractMonths && (
+              <p className="text-xs text-red-500 mt-1">{errors.contractMonths.message}</p>
+            )}
           </div>
         </div>
       </div>
