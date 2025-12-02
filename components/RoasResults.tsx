@@ -12,6 +12,11 @@ interface RoasResultsProps {
     excellentRoas: number;
     avgRoas: number;
   };
+  branding?: {
+    primaryColor: string;
+    secondaryColor: string;
+    accentColor: string;
+  } | null;
 }
 
 const formatCurrency = (value: number) =>
@@ -21,7 +26,7 @@ const formatCurrency = (value: number) =>
     maximumFractionDigits: 2,
   });
 
-export default function RoasResults({ results, input, benchmarks }: RoasResultsProps) {
+export default function RoasResults({ results, input, benchmarks, branding }: RoasResultsProps) {
   if (!results || !input) {
     return (
       <div className="flex items-center justify-center h-full text-sm text-slate-400 border border-dashed border-slate-200 rounded-xl p-4">
@@ -69,6 +74,9 @@ export default function RoasResults({ results, input, benchmarks }: RoasResultsP
     }
   }
 
+  const primaryColor = branding?.primaryColor || '#0ea5e9';
+  const secondaryColor = branding?.secondaryColor || '#64748b';
+
   return (
     <section className="space-y-3">
       {/* Card de Performance vs Mercado */}
@@ -100,11 +108,13 @@ export default function RoasResults({ results, input, benchmarks }: RoasResultsP
           label={hasCommission ? "Faturamento líquido" : "Faturamento estimado"}
           value={formatCurrency(revenue)}
           highlight
+          primaryColor={primaryColor}
         />
         <ResultCard
           label="ROAS"
           value={`${roas.toFixed(2)}x`}
           highlight
+          primaryColor={primaryColor}
           badge={effectiveBenchmarks ? {
             text: marketComparison,
             type: performance
@@ -134,6 +144,7 @@ export default function RoasResults({ results, input, benchmarks }: RoasResultsP
           label="ROI (Retorno sobre Investimento)"
           value={`${results.roi.toFixed(1)}%`}
           highlight
+          primaryColor={primaryColor}
         />
       </div>
 
@@ -156,12 +167,18 @@ export default function RoasResults({ results, input, benchmarks }: RoasResultsP
               </div>
             )}
             {results.userAgencyRoi !== undefined && (
-              <div className="p-3 rounded-lg bg-sky-50 border border-sky-200">
-                <p className="text-xs text-sky-700 mb-1">Sua Agência</p>
+              <div 
+                className="p-3 rounded-lg border"
+                style={{ 
+                  backgroundColor: `${primaryColor}10`, // 10% opacity
+                  borderColor: `${primaryColor}40` // 40% opacity
+                }}
+              >
+                <p className="text-xs font-medium mb-1" style={{ color: primaryColor }}>Sua Agência</p>
                 <p className={`text-lg font-semibold ${results.userAgencyRoi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {results.userAgencyRoi.toFixed(1)}% ROI
                 </p>
-                <p className="text-xs text-sky-600 mt-1">
+                <p className="text-xs opacity-80 mt-1" style={{ color: primaryColor }}>
                   Considerando sua mensalidade
                 </p>
               </div>
@@ -187,18 +204,26 @@ interface ResultCardProps {
   label: string;
   value: string;
   highlight?: boolean;
+  primaryColor?: string;
   badge?: {
     text: string;
     type: 'excellent' | 'good' | 'average' | 'below-average';
   };
 }
 
-function ResultCard({ label, value, highlight, badge }: ResultCardProps) {
+function ResultCard({ label, value, highlight, primaryColor, badge }: ResultCardProps) {
   return (
     <div
       className={`rounded-xl border p-3 md:p-4 ${
-        highlight ? 'border-sky-200 bg-sky-50' : 'border-slate-200 bg-white'
+        !highlight ? 'border-slate-200 bg-white' : ''
       }`}
+      style={highlight && primaryColor ? {
+        backgroundColor: `${primaryColor}15`, // 15% opacity
+        borderColor: `${primaryColor}40`
+      } : highlight ? {
+        backgroundColor: '#f0f9ff', // fallback sky-50
+        borderColor: '#bae6fd' // fallback sky-200
+      } : {}}
     >
       <p className="text-xs text-slate-500 mb-1">{label}</p>
       <p className="text-lg md:text-xl font-semibold text-slate-900">

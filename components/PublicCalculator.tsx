@@ -53,15 +53,20 @@ export default function PublicCalculator({
     pessimistic: RoasOutput;
   } | null>(null);
 
+  const primaryColor = branding?.primaryColor || '#0ea5e9';
+  const secondaryColor = branding?.secondaryColor || '#64748b';
+  const accentColor = branding?.accentColor || '#06b6d4';
+
   // Aplicar branding via CSS variables
   useEffect(() => {
-    if (branding) {
-      const root = document.documentElement;
-      root.style.setProperty('--primary-color', branding.primaryColor);
-      root.style.setProperty('--secondary-color', branding.secondaryColor);
-      root.style.setProperty('--accent-color', branding.accentColor);
-    }
-  }, [branding]);
+    const root = document.documentElement;
+    root.style.setProperty('--primary-color', primaryColor);
+    root.style.setProperty('--secondary-color', secondaryColor);
+    root.style.setProperty('--accent-color', accentColor);
+    // Criar variações de opacidade para fundos
+    root.style.setProperty('--primary-color-10', `${primaryColor}1a`); // 10% opacity
+    root.style.setProperty('--primary-color-20', `${primaryColor}33`); // 20% opacity
+  }, [primaryColor, secondaryColor, accentColor]);
 
   const handleCalculate = async (data: RoasInput) => {
     // Aplicar cenário se selecionado
@@ -133,66 +138,117 @@ export default function PublicCalculator({
     'Descubra quanto você pode faturar com seu investimento em tráfego.';
 
   return (
-    <main className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-[1400px] bg-white shadow-lg rounded-2xl p-6 md:p-8">
-        <header className="mb-6">
-          {branding?.logoUrl && (
-            <div className="mb-4">
-              <img
-                src={branding.logoUrl}
-                alt={displayName}
-                className="h-12 object-contain"
+    <main 
+      className="min-h-screen flex items-center justify-center px-4 py-8 relative overflow-hidden"
+      style={{
+        background: `linear-gradient(135deg, ${primaryColor}0d 0%, #ffffff 100%)`
+      }}
+    >
+      {/* Background Decorativo */}
+      <div 
+        className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-transparent via-white to-transparent opacity-50"
+        style={{ backgroundColor: primaryColor }}
+      />
+      
+      <div className="w-full max-w-[1400px] bg-white/80 backdrop-blur-sm shadow-2xl rounded-3xl border border-white/50 p-6 md:p-10 relative z-10">
+        <header className="mb-10 text-center md:text-left border-b border-slate-100 pb-6">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+            {branding?.logoUrl ? (
+              <div className="relative h-20 w-auto min-w-[150px] flex items-center justify-center md:justify-start">
+                <img
+                  src={branding.logoUrl}
+                  alt={displayName}
+                  className="h-full w-auto object-contain max-w-[200px]"
+                />
+              </div>
+            ) : (
+              <div 
+                className="h-16 w-16 rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-lg"
+                style={{ background: `linear-gradient(135deg, ${primaryColor}, ${accentColor})` }}
+              >
+                {displayName.charAt(0).toUpperCase()}
+              </div>
+            )}
+            
+            <div className="flex-1">
+              <h1 
+                className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight"
+                style={{ color: primaryColor }}
+              >
+                {displayName}
+              </h1>
+              <p className="text-slate-600 mt-2 text-lg leading-relaxed max-w-2xl">
+                {displayDescription}
+              </p>
+            </div>
+          </div>
+        </header>
+
+        <div className="grid gap-8 lg:grid-cols-[1fr,1.2fr]">
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+              <span className="w-1 h-6 rounded-full" style={{ backgroundColor: accentColor }}></span>
+              Parâmetros da Simulação
+            </h2>
+            <RoasForm 
+              onCalculate={handleCalculate}
+              defaultValues={metrics ? {
+                ticket: metrics.avgTicket,
+                cpl: metrics.avgCpl,
+                conversionRate: metrics.avgConversionRate,
+              } : undefined}
+              branding={branding}
+            />
+          </div>
+
+          <div className="space-y-6">
+            <div className="bg-slate-50/50 rounded-2xl p-6 border border-slate-100">
+               <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                <span className="w-1 h-6 rounded-full" style={{ backgroundColor: secondaryColor }}></span>
+                Resultados Projetados
+              </h2>
+              <RoasResults 
+                results={results} 
+                input={input || undefined}
+                benchmarks={metrics ? {
+                  goodRoas: metrics.goodRoas,
+                  excellentRoas: metrics.excellentRoas,
+                  avgRoas: metrics.avgRoas,
+                } : undefined}
+                branding={branding}
               />
             </div>
-          )}
-          <h1 
-            className="text-2xl md:text-3xl font-semibold text-slate-900"
-            style={branding ? { color: branding.primaryColor } : {}}
-          >
-            {displayName}
-          </h1>
-          <p className="text-slate-500 mt-1">
-            {displayDescription}
-          </p>
-        </header>
-        <div className="grid gap-6 md:grid-cols-[1.1fr,0.9fr]">
-          <RoasForm 
-            onCalculate={handleCalculate}
-            defaultValues={metrics ? {
-              ticket: metrics.avgTicket,
-              cpl: metrics.avgCpl,
-              conversionRate: metrics.avgConversionRate,
-            } : undefined}
-          />
-          <RoasResults 
-            results={results} 
-            input={input || undefined}
-            benchmarks={metrics ? {
-              goodRoas: metrics.goodRoas,
-              excellentRoas: metrics.excellentRoas,
-              avgRoas: metrics.avgRoas,
-            } : undefined}
-          />
+
+            {/* Comparação de Cenários */}
+            {scenarios && (
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                <ScenariosComparison scenarios={scenarios} />
+              </div>
+            )}
+
+            {/* Projeção de Contrato */}
+            {projection && (
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                <ContractProjectionView
+                  projection={projection}
+                  input={input || undefined}
+                  organizationName={displayName}
+                />
+              </div>
+            )}
+          </div>
         </div>
+
         {saving && (
-          <div className="mt-4 text-xs text-slate-500 text-center">
+          <div className="mt-6 text-sm text-slate-500 text-center flex items-center justify-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
             Salvando simulação...
           </div>
         )}
-
-        {/* Comparação de Cenários */}
-        {scenarios && (
-          <ScenariosComparison scenarios={scenarios} />
-        )}
-
-        {/* Projeção de Contrato */}
-        {projection && (
-          <ContractProjectionView
-            projection={projection}
-            input={input || undefined}
-            organizationName={displayName}
-          />
-        )}
+        
+        <footer className="mt-12 pt-6 border-t border-slate-100 text-center text-xs text-slate-400">
+          <p>Powered by Calculadora ROAS &bull; {new Date().getFullYear()}</p>
+        </footer>
       </div>
     </main>
   );
