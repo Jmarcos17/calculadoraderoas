@@ -50,7 +50,7 @@ export default function DashboardSidebar() {
       {/* Sidebar (Desktop & Mobile) */}
       <div className={`
         fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-200 ease-in-out flex flex-col
-        lg:translate-x-0 lg:static lg:inset-auto
+        lg:translate-x-0 lg:fixed lg:inset-y-0
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="hidden lg:flex h-16 shrink-0 items-center px-6 border-b border-slate-200 lg:border-none">
