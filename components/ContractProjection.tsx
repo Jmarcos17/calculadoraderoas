@@ -348,6 +348,27 @@ export default function ContractProjectionView({
               strokeWidth={2}
               name="Faturamento Acumulado"
             />
+            {/* Linhas de Comparação de Agência (Simuladas no gráfico para visualização) */}
+            {input?.agencyFee && (
+              <Line
+                type="monotone"
+                dataKey={(data) => data.revenue - (input.agencyFee || 0)}
+                stroke="#ef4444"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                name="Liq. Agência Genérica"
+              />
+            )}
+            {input?.userAgencyFee && (
+              <Line
+                type="monotone"
+                dataKey={(data) => data.revenue - (input.userAgencyFee || 0)}
+                stroke="#8b5cf6"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                name="Liq. Sua Agência"
+              />
+            )}
           </LineChart>
         </ResponsiveContainer>
       </div>

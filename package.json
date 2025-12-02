@@ -12,6 +12,7 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^6.19.0",
     "@types/bcryptjs": "^2.4.6",
     "bcryptjs": "^3.0.3",
@@ -22,8 +23,10 @@
     "prisma": "^6.19.0",
     "react": "^18",
     "react-dom": "^18",
+    "react-hook-form": "^7.67.0",
     "react-hot-toast": "^2.6.0",
     "recharts": "^3.4.1",
+    "tailwindcss-animate": "^1.0.7",
     "zod": "^4.1.12"
   },
   "devDependencies": {

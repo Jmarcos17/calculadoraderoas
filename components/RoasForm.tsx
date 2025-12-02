@@ -1,77 +1,85 @@
-// components/RoasForm.tsx
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { PeriodType, RoasInput, ScenarioType } from '@/lib/roas';
 import { NicheId, getAllNiches, getNicheById } from '@/lib/niches';
+import { RoasFormData, roasFormSchema } from '@/lib/validations';
+import LoadingSpinner from './LoadingSpinner';
 
 interface RoasFormProps {
   onCalculate: (data: RoasInput) => void;
-  defaultValues?: {
-    investment?: number;
-    ticket?: number;
-    cpl?: number;
-    conversionRate?: number;
-    period?: PeriodType;
-    commissionRate?: number;
-    niche?: NicheId;
-    contractMonths?: number;
-    growthRate?: number;
-    scenario?: ScenarioType;
-  };
+  defaultValues?: Partial<RoasFormData>;
 }
 
 export default function RoasForm({ onCalculate, defaultValues }: RoasFormProps) {
-  const [niche, setNiche] = useState<NicheId>(defaultValues?.niche || 'custom');
-  const [investment, setInvestment] = useState(defaultValues?.investment?.toString() || '1000');
-  const [ticket, setTicket] = useState(defaultValues?.ticket?.toString() || '800');
-  const [cpl, setCpl] = useState(defaultValues?.cpl?.toString() || '21.44');
-  const [conversionRate, setConversionRate] = useState(defaultValues?.conversionRate?.toString() || '5');
-  const [period, setPeriod] = useState<PeriodType>(defaultValues?.period || 'monthly');
-  const [commissionRate, setCommissionRate] = useState(defaultValues?.commissionRate?.toString() || '0');
-  const [contractMonths, setContractMonths] = useState(defaultValues?.contractMonths?.toString() || '');
-  const [growthRate, setGrowthRate] = useState(defaultValues?.growthRate?.toString() || '0');
-  const [scenario, setScenario] = useState<ScenarioType>(defaultValues?.scenario || 'realistic');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<RoasFormData>({
+    resolver: zodResolver(roasFormSchema) as any,
+    mode: 'onChange',
+    defaultValues: {
+      investment: 1000,
+      ticket: 800,
+      cpl: 21.44,
+      conversionRate: 5,
+      period: 'monthly',
+      commissionRate: 0,
+      niche: 'custom',
+      scenario: 'realistic',
+      ...defaultValues,
+    },
+  });
+
+  const selectedNiche = watch('niche') as NicheId;
+  const selectedPeriod = watch('period');
+  const selectedScenario = watch('scenario');
+  const contractMonths = watch('contractMonths');
 
   // Auto-preenchimento quando nicho muda
   useEffect(() => {
-    if (niche !== 'custom') {
-      const nicheData = getNicheById(niche);
-      setTicket(nicheData.avgTicket.toString());
-      setCpl(nicheData.avgCpl.toString());
-      setConversionRate(nicheData.avgConversionRate.toString());
+    if (selectedNiche && selectedNiche !== 'custom') {
+      const nicheData = getNicheById(selectedNiche);
+      setValue('ticket', nicheData.avgTicket);
+      setValue('cpl', nicheData.avgCpl);
+      setValue('conversionRate', nicheData.avgConversionRate);
     }
-  }, [niche]);
+  }, [selectedNiche, setValue]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Garantir que o período seja sempre 'monthly' ou 'daily', nunca undefined
-    const normalizedPeriod: PeriodType = (period === 'daily' || period === 'monthly') ? period : 'monthly';
-    const payload: RoasInput = {
-      investment: parseFloat(investment.replace(',', '.')) || 0,
-      ticket: parseFloat(ticket.replace(',', '.')) || 0,
-      cpl: parseFloat(cpl.replace(',', '.')) || 0,
-      conversionRate: parseFloat(conversionRate.replace(',', '.')) || 0,
-      period: normalizedPeriod,
-      commissionRate: commissionRate ? parseFloat(commissionRate.replace(',', '.')) : 0,
-      niche,
-      contractMonths: contractMonths ? parseFloat(contractMonths.replace(',', '.')) : undefined,
-      growthRate: growthRate ? parseFloat(growthRate.replace(',', '.')) : undefined,
-      scenario,
-    };
-    onCalculate(payload);
+  const onSubmit = async (data: RoasFormData) => {
+    setIsSubmitting(true);
+    try {
+      // Simulate a small delay for better UX if needed, or just proceed
+      // await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const payload: RoasInput = {
+        ...data,
+        niche: data.niche as NicheId,
+        period: data.period as PeriodType,
+        scenario: data.scenario as ScenarioType,
+      };
+      onCalculate(payload);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {/* Dropdown de Nicho */}
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-2">
           Selecione o nicho
         </label>
         <select
-          value={niche}
-          onChange={(e) => setNiche(e.target.value as NicheId)}
+          {...register('niche')}
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
         >
           {getAllNiches().map((n) => (
@@ -80,9 +88,9 @@ export default function RoasForm({ onCalculate, defaultValues }: RoasFormProps) 
             </option>
           ))}
         </select>
-        {niche !== 'custom' && (
+        {selectedNiche !== 'custom' && (
           <p className="text-xs text-slate-500 mt-1">
-            Valores pré-preenchidos com médias do mercado para {getNicheById(niche).name}
+            Valores pré-preenchidos com médias do mercado para {getNicheById(selectedNiche).name}
           </p>
         )}
       </div>
@@ -97,22 +105,32 @@ export default function RoasForm({ onCalculate, defaultValues }: RoasFormProps) 
               Investimento mensal em tráfego (R$)
             </label>
             <input
-              type="text"
-              value={investment}
-              onChange={(e) => setInvestment(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              type="number"
+              step="0.01"
+              {...register('investment')}
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                errors.investment ? 'border-red-500' : 'border-slate-300'
+              }`}
             />
+            {errors.investment && (
+              <p className="text-xs text-red-500 mt-1">{errors.investment.message}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm text-slate-600 mb-1">
               Ticket médio (R$)
             </label>
             <input
-              type="text"
-              value={ticket}
-              onChange={(e) => setTicket(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              type="number"
+              step="0.01"
+              {...register('ticket')}
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                errors.ticket ? 'border-red-500' : 'border-slate-300'
+              }`}
             />
+            {errors.ticket && (
+              <p className="text-xs text-red-500 mt-1">{errors.ticket.message}</p>
+            )}
           </div>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
@@ -121,22 +139,32 @@ export default function RoasForm({ onCalculate, defaultValues }: RoasFormProps) 
               Custo por lead (R$)
             </label>
             <input
-              type="text"
-              value={cpl}
-              onChange={(e) => setCpl(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              type="number"
+              step="0.01"
+              {...register('cpl')}
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                errors.cpl ? 'border-red-500' : 'border-slate-300'
+              }`}
             />
+            {errors.cpl && (
+              <p className="text-xs text-red-500 mt-1">{errors.cpl.message}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm text-slate-600 mb-1">
               Taxa de conversão (%)
             </label>
             <input
-              type="text"
-              value={conversionRate}
-              onChange={(e) => setConversionRate(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              type="number"
+              step="0.1"
+              {...register('conversionRate')}
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                errors.conversionRate ? 'border-red-500' : 'border-slate-300'
+              }`}
             />
+            {errors.conversionRate && (
+              <p className="text-xs text-red-500 mt-1">{errors.conversionRate.message}</p>
+            )}
           </div>
         </div>
         <div>
@@ -144,15 +172,83 @@ export default function RoasForm({ onCalculate, defaultValues }: RoasFormProps) 
             Taxa de comissão (%)
           </label>
           <input
-            type="text"
-            value={commissionRate}
-            onChange={(e) => setCommissionRate(e.target.value)}
+            type="number"
+            step="0.1"
+            {...register('commissionRate')}
             placeholder="Ex: 10 (para 10% de comissão)"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+            className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+              errors.commissionRate ? 'border-red-500' : 'border-slate-300'
+            }`}
           />
           <p className="text-xs text-slate-500 mt-1">
             Percentual de comissão que será descontado da receita bruta (opcional, padrão: 0%)
           </p>
+          {errors.commissionRate && (
+            <p className="text-xs text-red-500 mt-1">{errors.commissionRate.message}</p>
+          )}
+        </div>
+      </fieldset>
+
+      {/* Comparação de Agências */}
+      <fieldset className="space-y-3 border border-slate-200 rounded-xl p-4">
+        <legend className="px-1 text-sm font-medium text-slate-700">
+          Comparação de Agências (Opcional)
+        </legend>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div>
+            <label className="block text-sm text-slate-600 mb-1">
+              Mensalidade Agência Genérica (R$)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              {...register('agencyFee')}
+              placeholder="Ex: 1500"
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                errors.agencyFee ? 'border-red-500' : 'border-slate-300'
+              }`}
+            />
+            {errors.agencyFee && (
+              <p className="text-xs text-red-500 mt-1">{errors.agencyFee.message}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm text-slate-600 mb-1">
+              Mensalidade Sua Agência (R$)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              {...register('userAgencyFee')}
+              placeholder="Ex: 2500"
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                errors.userAgencyFee ? 'border-red-500' : 'border-slate-300'
+              }`}
+            />
+            {errors.userAgencyFee && (
+              <p className="text-xs text-red-500 mt-1">{errors.userAgencyFee.message}</p>
+            )}
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm text-slate-600 mb-1">
+            ROAS Alvo (para sugestão de investimento)
+          </label>
+          <input
+            type="number"
+            step="0.1"
+            {...register('targetRoas')}
+            placeholder="Ex: 5"
+            className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+              errors.targetRoas ? 'border-red-500' : 'border-slate-300'
+            }`}
+          />
+          <p className="text-xs text-slate-500 mt-1">
+            Informe o ROAS desejado para calcularmos o investimento ideal (em breve)
+          </p>
+          {errors.targetRoas && (
+            <p className="text-xs text-red-500 mt-1">{errors.targetRoas.message}</p>
+          )}
         </div>
       </fieldset>
 
@@ -168,17 +264,21 @@ export default function RoasForm({ onCalculate, defaultValues }: RoasFormProps) 
           <input
             type="number"
             min="1"
-            max="24"
-            value={contractMonths}
-            onChange={(e) => setContractMonths(e.target.value)}
+            max="60"
+            {...register('contractMonths')}
             placeholder="Ex: 6"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+            className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+              errors.contractMonths ? 'border-red-500' : 'border-slate-300'
+            }`}
           />
           <p className="text-xs text-slate-500 mt-1">
             Deixe vazio para cálculo mensal simples
           </p>
+          {errors.contractMonths && (
+            <p className="text-xs text-red-500 mt-1">{errors.contractMonths.message}</p>
+          )}
         </div>
-        {contractMonths && parseInt(contractMonths) > 1 && (
+        {contractMonths && contractMonths > 1 && (
           <div>
             <label className="block text-sm text-slate-600 mb-1">
               Taxa de crescimento mensal (%)
@@ -187,14 +287,18 @@ export default function RoasForm({ onCalculate, defaultValues }: RoasFormProps) 
               type="number"
               step="0.1"
               min="0"
-              value={growthRate}
-              onChange={(e) => setGrowthRate(e.target.value)}
+              {...register('growthRate')}
               placeholder="Ex: 5"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                errors.growthRate ? 'border-red-500' : 'border-slate-300'
+              }`}
             />
             <p className="text-xs text-slate-500 mt-1">
               Crescimento esperado no investimento mês a mês (0% = sem crescimento)
             </p>
+            {errors.growthRate && (
+              <p className="text-xs text-red-500 mt-1">{errors.growthRate.message}</p>
+            )}
           </div>
         )}
       </fieldset>
@@ -205,44 +309,25 @@ export default function RoasForm({ onCalculate, defaultValues }: RoasFormProps) 
           Cenário de Projeção
         </label>
         <div className="inline-flex rounded-full bg-slate-100 p-1 text-xs w-full">
-          <button
-            type="button"
-            onClick={() => setScenario('pessimistic')}
-            className={`flex-1 px-3 py-2 rounded-full transition-colors ${
-              scenario === 'pessimistic'
-                ? 'bg-red-500 text-white'
-                : 'text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            Pessimista
-          </button>
-          <button
-            type="button"
-            onClick={() => setScenario('realistic')}
-            className={`flex-1 px-3 py-2 rounded-full transition-colors ${
-              scenario === 'realistic'
-                ? 'bg-sky-500 text-white'
-                : 'text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            Realista
-          </button>
-          <button
-            type="button"
-            onClick={() => setScenario('optimistic')}
-            className={`flex-1 px-3 py-2 rounded-full transition-colors ${
-              scenario === 'optimistic'
-                ? 'bg-green-500 text-white'
-                : 'text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            Otimista
-          </button>
+          {(['pessimistic', 'realistic', 'optimistic'] as const).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setValue('scenario', s)}
+              className={`flex-1 px-3 py-2 rounded-full transition-colors ${
+                selectedScenario === s
+                  ? s === 'pessimistic' ? 'bg-red-500 text-white' : s === 'optimistic' ? 'bg-green-500 text-white' : 'bg-sky-500 text-white'
+                  : 'text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              {s === 'pessimistic' ? 'Pessimista' : s === 'realistic' ? 'Realista' : 'Otimista'}
+            </button>
+          ))}
         </div>
         <p className="text-xs text-slate-500 mt-2">
-          {scenario === 'optimistic' && 'Ajusta métricas para +20% ticket, -15% CPL, +30% conversão'}
-          {scenario === 'realistic' && 'Usa os valores informados sem ajustes'}
-          {scenario === 'pessimistic' && 'Ajusta métricas para -15% ticket, +20% CPL, -25% conversão'}
+          {selectedScenario === 'optimistic' && 'Ajusta métricas para +20% ticket, -15% CPL, +30% conversão'}
+          {selectedScenario === 'realistic' && 'Usa os valores informados sem ajustes'}
+          {selectedScenario === 'pessimistic' && 'Ajusta métricas para -15% ticket, +20% CPL, -25% conversão'}
         </p>
       </div>
 
@@ -250,9 +335,9 @@ export default function RoasForm({ onCalculate, defaultValues }: RoasFormProps) 
         <div className="inline-flex rounded-full bg-slate-100 p-1 text-xs">
           <button
             type="button"
-            onClick={() => setPeriod('monthly')}
+            onClick={() => setValue('period', 'monthly')}
             className={`px-3 py-1 rounded-full ${
-              period === 'monthly'
+              selectedPeriod === 'monthly'
                 ? 'bg-sky-500 text-white'
                 : 'text-slate-600'
             }`}
@@ -261,9 +346,9 @@ export default function RoasForm({ onCalculate, defaultValues }: RoasFormProps) 
           </button>
           <button
             type="button"
-            onClick={() => setPeriod('daily')}
+            onClick={() => setValue('period', 'daily')}
             className={`px-3 py-1 rounded-full ${
-              period === 'daily'
+              selectedPeriod === 'daily'
                 ? 'bg-sky-500 text-white'
                 : 'text-slate-600'
             }`}
@@ -273,12 +358,19 @@ export default function RoasForm({ onCalculate, defaultValues }: RoasFormProps) 
         </div>
         <button
           type="submit"
-          className="rounded-lg bg-sky-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-600"
+          disabled={isSubmitting}
+          className="rounded-lg bg-sky-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-600 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
         >
-          Calcular
+          {isSubmitting ? (
+            <>
+              <LoadingSpinner size="sm" />
+              Calculando...
+            </>
+          ) : (
+            'Calcular'
+          )}
         </button>
       </div>
     </form>
   );
 }
-

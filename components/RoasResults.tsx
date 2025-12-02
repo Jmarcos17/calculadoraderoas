@@ -130,7 +130,54 @@ export default function RoasResults({ results, input, benchmarks }: RoasResultsP
           label="Custo por venda"
           value={formatCurrency(costPerSale)}
         />
+        <ResultCard
+          label="ROI (Retorno sobre Investimento)"
+          value={`${results.roi.toFixed(1)}%`}
+          highlight
+        />
       </div>
+
+      {/* Comparação de Agências */}
+      {(results.agencyRoi !== undefined || results.userAgencyRoi !== undefined) && (
+        <div className="border border-slate-200 rounded-xl p-4 bg-white mt-4">
+          <h3 className="text-sm font-semibold text-slate-900 mb-3">
+            Comparação de ROI com Agências
+          </h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            {results.agencyRoi !== undefined && (
+              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+                <p className="text-xs text-slate-500 mb-1">Agência Genérica</p>
+                <p className={`text-lg font-semibold ${results.agencyRoi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {results.agencyRoi.toFixed(1)}% ROI
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Considerando mensalidade
+                </p>
+              </div>
+            )}
+            {results.userAgencyRoi !== undefined && (
+              <div className="p-3 rounded-lg bg-sky-50 border border-sky-200">
+                <p className="text-xs text-sky-700 mb-1">Sua Agência</p>
+                <p className={`text-lg font-semibold ${results.userAgencyRoi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {results.userAgencyRoi.toFixed(1)}% ROI
+                </p>
+                <p className="text-xs text-sky-600 mt-1">
+                  Considerando sua mensalidade
+                </p>
+              </div>
+            )}
+          </div>
+          {results.agencyRoi !== undefined && results.userAgencyRoi !== undefined && (
+            <div className="mt-3 text-center">
+              <p className="text-sm text-slate-600">
+                Diferença de ROI: <span className="font-bold text-green-600">
+                  {((results.userAgencyRoi - results.agencyRoi)).toFixed(1)}%
+                </span> a favor da sua agência
+              </p>
+            </div>
+          )}
+        </div>
+      )}
       {/* Aqui depois você pode colocar cenários (pessimista/realista/otimista) */}
     </section>
   );

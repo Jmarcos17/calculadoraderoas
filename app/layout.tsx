@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 import SessionProvider from '@/components/providers/SessionProvider';
 import { Toaster } from 'react-hot-toast';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export const metadata: Metadata = {
   title: 'Calculadora de ROAS',
@@ -17,7 +18,9 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body className="antialiased bg-slate-100">
         <SessionProvider>
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
           <Toaster position="top-right" />
         </SessionProvider>
       </body>

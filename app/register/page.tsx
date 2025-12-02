@@ -1,42 +1,48 @@
-// app/register/page.tsx
 "use client";
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { RegisterFormData, registerSchema } from '@/lib/validations';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    slug: '',
-  });
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const slug = watch('slug');
+
+  const onSubmit = async (data: RegisterFormData) => {
     setError('');
-    setLoading(true);
 
     try {
       const response = await fetch('/api/organizations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(data),
       });
 
-      const data = await response.json();
+      const result = await response.json();
 
       if (!response.ok) {
         // Mostrar mensagem de erro mais detalhada
-        const errorMsg = data.message 
-          ? `${data.error}: ${data.message}` 
-          : data.error || 'Erro ao criar conta';
+        const errorMsg = result.message 
+          ? `${result.error}: ${result.message}` 
+          : result.error || 'Erro ao criar conta';
         setError(errorMsg);
-        console.error('Registration error:', data);
+        console.error('Registration error:', result);
         return;
       }
 
@@ -44,9 +50,12 @@ export default function RegisterPage() {
       router.push('/login?registered=true');
     } catch (err) {
       setError('Erro ao criar conta');
-    } finally {
-      setLoading(false);
     }
+  };
+
+  const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+    setValue('slug', value);
   };
 
   return (
@@ -59,7 +68,7 @@ export default function RegisterPage() {
           Crie sua calculadora de ROAS personalizada
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
               {error}
@@ -72,11 +81,14 @@ export default function RegisterPage() {
             </label>
             <input
               type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              {...register('name')}
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                errors.name ? 'border-red-500' : 'border-slate-300'
+              }`}
             />
+            {errors.name && (
+              <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>
+            )}
           </div>
 
           <div>
@@ -85,15 +97,21 @@ export default function RegisterPage() {
             </label>
             <input
               type="text"
-              value={formData.slug}
-              onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })}
-              required
-              pattern="^[a-z0-9-]+$"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              {...register('slug')}
+              onChange={(e) => {
+                register('slug').onChange(e); // Call original onChange
+                handleSlugChange(e);
+              }}
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                errors.slug ? 'border-red-500' : 'border-slate-300'
+              }`}
             />
             <p className="text-xs text-slate-500 mt-1">
-              Sua calculadora estará em: /{formData.slug || 'seu-slug'}
+              Sua calculadora estará em: /{slug || 'seu-slug'}
             </p>
+            {errors.slug && (
+              <p className="text-xs text-red-500 mt-1">{errors.slug.message}</p>
+            )}
           </div>
 
           <div>
@@ -102,11 +120,14 @@ export default function RegisterPage() {
             </label>
             <input
               type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              {...register('email')}
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                errors.email ? 'border-red-500' : 'border-slate-300'
+              }`}
             />
+            {errors.email && (
+              <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>
+            )}
           </div>
 
           <div>
@@ -115,20 +136,29 @@ export default function RegisterPage() {
             </label>
             <input
               type="password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              required
-              minLength={6}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              {...register('password')}
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 ${
+                errors.password ? 'border-red-500' : 'border-slate-300'
+              }`}
             />
+            {errors.password && (
+              <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>
+            )}
           </div>
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-sky-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isSubmitting}
+            className="w-full rounded-lg bg-sky-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
           >
-            {loading ? 'Criando conta...' : 'Criar conta'}
+            {isSubmitting ? (
+              <>
+                <LoadingSpinner size="sm" />
+                Criando conta...
+              </>
+            ) : (
+              'Criar conta'
+            )}
           </button>
         </form>
 
@@ -142,4 +172,3 @@ export default function RegisterPage() {
     </main>
   );
 }
-

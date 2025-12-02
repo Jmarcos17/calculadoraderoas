@@ -104,6 +104,7 @@ model Simulation {
 
   @@index([organizationId])
   @@index([createdAt])
+  @@index([organizationId, createdAt])
 }
 
 // NextAuth - Account (para OAuth)

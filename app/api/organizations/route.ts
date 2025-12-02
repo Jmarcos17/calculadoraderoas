@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db/prisma';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
+import { handleApiError } from '@/lib/api-error';
 
 const createOrganizationSchema = z.object({
   name: z.string().min(1),
@@ -42,11 +43,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(organizations);
   } catch (error) {
-    console.error('Error fetching organizations:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
 
@@ -110,27 +107,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(organization, { status: 201 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.issues },
-        { status: 400 }
-      );
-    }
-
-    console.error('Error creating organization:', error);
-    
-    // Retornar mais detalhes do erro em desenvolvimento
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const errorStack = error instanceof Error ? error.stack : undefined;
-    
-    return NextResponse.json(
-      { 
-        error: 'Internal server error',
-        message: errorMessage,
-        ...(process.env.NODE_ENV === 'development' && { stack: errorStack })
-      },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
 

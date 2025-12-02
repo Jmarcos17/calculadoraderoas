@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db/prisma';
 import { z } from 'zod';
+import { handleApiError } from '@/lib/api-error';
 
 const simulationSchema = z.object({
   inputData: z.object({
@@ -68,11 +69,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(simulations);
   } catch (error) {
-    console.error('Error fetching simulations:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
 
@@ -110,18 +107,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(simulation, { status: 201 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.issues },
-        { status: 400 }
-      );
-    }
-
-    console.error('Error creating simulation:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
 
