@@ -185,6 +185,68 @@ export default function RoasForm({ onCalculate, defaultValues, branding }: RoasF
             )}
           </div>
         </div>
+
+        {/* Comparação de Mensalidades */}
+        <div className="border-t border-slate-200 pt-4 mt-2">
+          <h4 className="text-sm font-semibold text-slate-800 mb-3">
+            Comparação de Mensalidades (Opcional)
+          </h4>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Mensalidade Agência Concorrente (R$)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                {...register('agencyFee')}
+                placeholder="Ex: 3000"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Mensalidade de outra agência para comparação
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Sua Mensalidade (R$)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                {...register('userAgencyFee')}
+                placeholder="Ex: 2500"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Sua mensalidade para comparação de ROI
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Meta de Faturamento */}
+        <div className="border-t border-slate-200 pt-4 mt-2">
+          <h4 className="text-sm font-semibold text-slate-800 mb-3">
+            Cálculo Reverso (Opcional)
+          </h4>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Meta de Faturamento (R$)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              {...register('targetRevenue')}
+              placeholder="Ex: 50000"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+            />
+            <p className="text-xs text-slate-500 mt-1">
+              Informe uma meta de faturamento para calcular o investimento necessário
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Toggle de Cenários */}

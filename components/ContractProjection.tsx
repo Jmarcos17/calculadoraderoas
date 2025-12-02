@@ -348,27 +348,6 @@ export default function ContractProjectionView({
               strokeWidth={2}
               name="Faturamento Acumulado"
             />
-            {/* Linhas de Comparação de Agência (Simuladas no gráfico para visualização) */}
-            {input?.agencyFee && (
-              <Line
-                type="monotone"
-                dataKey={(data) => data.revenue - (input.agencyFee || 0)}
-                stroke="#ef4444"
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                name="Liq. Agência Genérica"
-              />
-            )}
-            {input?.userAgencyFee && (
-              <Line
-                type="monotone"
-                dataKey={(data) => data.revenue - (input.userAgencyFee || 0)}
-                stroke="#8b5cf6"
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                name="Liq. Sua Agência"
-              />
-            )}
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -391,6 +370,75 @@ export default function ContractProjectionView({
           </BarChart>
         </ResponsiveContainer>
       </div>
+
+      {/* Gráfico de Comparação de Lucro Líquido (Se houver mensalidades) */}
+      {(input?.agencyFee || input?.userAgencyFee) && (
+        <div className="bg-white rounded-xl border border-slate-200 p-6">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">
+            Comparação de Lucro Líquido por Mês
+          </h3>
+          <p className="text-sm text-slate-600 mb-4">
+            Comparação do lucro real após descontar investimento e mensalidade da agência
+          </p>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart
+              data={projection.monthly.map((month) => ({
+                month: month.month,
+                semAgencia: month.revenue - month.investment,
+                ...(input.agencyFee && {
+                  agenciaConcorrente: month.revenue - month.investment - input.agencyFee,
+                }),
+                ...(input.userAgencyFee && {
+                  suaAgencia: month.revenue - month.investment - input.userAgencyFee,
+                }),
+              }))}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="month"
+                label={{ value: 'Mês', position: 'insideBottom', offset: -5 }}
+              />
+              <YAxis
+                tickFormatter={(value) => formatCurrency(value)}
+              />
+              <Tooltip
+                formatter={(value: number) => formatCurrency(value)}
+                labelFormatter={(label) => `${label}° mês`}
+              />
+              <Legend />
+              <Bar
+                dataKey="semAgencia"
+                fill="#94a3b8"
+                name="Sem Agência"
+              />
+              {input.agencyFee && (
+                <Bar
+                  dataKey="agenciaConcorrente"
+                  fill="#ef4444"
+                  name="Com Agência Concorrente"
+                />
+              )}
+              {input.userAgencyFee && (
+                <Bar
+                  dataKey="suaAgencia"
+                  fill="#22c55e"
+                  name="Com Sua Agência"
+                />
+              )}
+            </BarChart>
+          </ResponsiveContainer>
+          {input.agencyFee && input.userAgencyFee && (
+            <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+              <p className="text-sm font-semibold text-green-800">
+                💰 Vantagem Competitiva: {formatCurrency((input.agencyFee - input.userAgencyFee) * projection.monthly.length)} ao longo do contrato
+              </p>
+              <p className="text-xs text-green-700 mt-1">
+                Sua mensalidade gera {formatCurrency(input.agencyFee - input.userAgencyFee)} a mais de lucro por mês
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Tabela Detalhada Mês a Mês */}
       <div className="bg-white rounded-xl border border-slate-200 p-6">

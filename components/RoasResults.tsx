@@ -192,7 +192,38 @@ export default function RoasResults({ results, input, benchmarks, branding }: Ro
         </div>
       </div>
 
-      {/* 4. Comparativo de Agências (Se disponível) */}
+      {/* 4. Investimento Sugerido (Se disponível) */}
+      {results.suggestedInvestment && results.suggestedInvestment > 0 && (
+        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl border border-purple-200 p-6">
+          <div className="flex items-start gap-4">
+            <div className="p-3 rounded-full bg-purple-100">
+              <Target className="w-6 h-6 text-purple-600" />
+            </div>
+            <div className="flex-1">
+              <h4 className="text-base font-semibold text-slate-900 mb-1">
+                💡 Sugestão de Investimento
+              </h4>
+              <p className="text-sm text-slate-600 mb-3">
+                {input.targetRevenue
+                  ? `Para atingir sua meta de faturamento de ${formatCurrency(input.targetRevenue)}, recomendamos:`
+                  : 'Para dobrar seu faturamento mantendo as mesmas métricas, recomendamos:'
+                }
+              </p>
+              <div className="inline-flex items-baseline gap-2 bg-white rounded-xl px-4 py-3 shadow-sm border border-purple-100">
+                <span className="text-sm text-slate-600">Investir</span>
+                <span className="text-2xl font-bold text-purple-600">
+                  {formatCurrency(results.suggestedInvestment)}
+                </span>
+                <span className="text-sm text-slate-500">
+                  por mês
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Comparativo de Agências (Se disponível) */}
       {(results.agencyRoi !== undefined || results.userAgencyRoi !== undefined) && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 relative overflow-hidden">
           <div className="relative z-10">

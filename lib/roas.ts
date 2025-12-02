@@ -15,6 +15,7 @@ export interface RoasInput {
   agencyFee?: number;      // Mensalidade da Agência Genérica (R$)
   userAgencyFee?: number;  // Mensalidade da Agência do Usuário (R$)
   targetRoas?: number;     // ROAS alvo para cálculo reverso de investimento
+  targetRevenue?: number;  // Meta de faturamento para cálculo reverso (R$)
   niche?: NicheId;         // Nicho selecionado (opcional)
   contractMonths?: number; // Duração do contrato em meses (opcional)
   growthRate?: number;     // Taxa de crescimento mensal do investimento (%) (opcional)
@@ -73,6 +74,7 @@ export function calculateRoas({
   agencyFee,
   userAgencyFee,
   targetRoas,
+  targetRevenue,
 }: RoasInput): RoasOutput {
   // Validação: garantir que CPL seja maior que zero
   if (cpl <= 0) {
@@ -138,66 +140,38 @@ export function calculateRoas({
     userAgencyRoi = totalCost > 0 ? ((revenue - totalCost) / totalCost) * 100 : 0;
   }
 
-  // Cálculo Reverso: Sugestão de Investimento para atingir ROAS alvo
+  // Cálculo Reverso: Sugestão de Investimento
   let suggestedInvestment: number | undefined;
-  if (targetRoas && targetRoas > 0) {
-    // Fórmula: Investimento = (Leads * Conversão * Ticket) / ROAS
-    // Mas Leads = Investimento / CPL
-    // Logo: Investimento * ROAS = (Investimento / CPL) * Conversão * Ticket
-    // Isso cancela o Investimento, o que significa que o ROAS é constante para um dado CPL, Conversão e Ticket.
-    // ROAS = (Ticket * Conversão) / CPL
-    
-    // Se quisermos atingir um ROAS específico, precisamos melhorar as métricas (CPL, Conv, Ticket), 
-    // não apenas mudar o investimento (assumindo modelo linear).
-    
-    // PORÉM, se o objetivo for "Quanto investir para ter X de Faturamento com esse ROAS?", 
-    // a pergunta seria diferente.
-    
-    // Se a intenção do usuário é "Quanto investir para ter um ROAS de X?", 
-    // e o ROAS atual é Y, e assumimos que o ROAS cai com escala ou é constante...
-    // Se for constante, não há "investimento sugerido" para mudar o ROAS.
-    
-    // Vamos interpretar como: "Quanto investir para ter um LUCRO X?" ou algo assim?
-    // O pedido foi: "Se conseguir manipular Roas para sugerir um valor de investimento"
-    
-    // Talvez o usuário queira dizer: "Dado um ROAS Alvo, qual o investimento MÁXIMO que posso ter?"
-    // Ou talvez: "Para ter R$ X de retorno, quanto preciso investir?"
-    
-    // Vamos assumir uma interpretação comum: 
-    // Se o usuário quer um ROAS alvo, e o ROAS atual é menor, ele precisa melhorar a eficiência.
-    // Se o ROAS atual é maior que o alvo, ele pode escalar.
-    
-    // Vamos implementar uma lógica simples de projeção:
-    // Se eu quero Faturar X (não temos input de meta de faturamento), quanto investir?
-    
-    // Vamos tentar outra abordagem:
-    // Talvez o usuário queira saber: "Com esse ROAS alvo, qual seria meu faturamento dado o investimento atual?"
-    // Mas o pedido é "sugerir um valor de investimento".
-    
-    // Vamos simplificar: Sugerir investimento para atingir R$ 100.000,00 de faturamento (exemplo arbitrário)? Não.
-    
-    // Vamos deixar suggestedInvestment como undefined por enquanto se a lógica não for clara,
-    // ou implementar uma regra de 3 simples se houver uma meta de receita (que não temos no input).
-    
-    // NOVA INTERPRETAÇÃO: Talvez o usuário queira fixar o ROAS e calcular o investimento necessário para um determinado resultado?
-    // Sem uma meta de resultado (ex: Quero R$ 10k de lucro), não dá para sugerir investimento apenas com ROAS alvo.
-    
-    // VOU ADICIONAR UM CAMPO DE META DE FATURAMENTO NO FUTURO SE NECESSÁRIO.
-    // Por enquanto, vou calcular o investimento necessário para atingir o ROAS alvo
-    // assumindo que o CPL aumenta com o investimento (escala não linear).
-    // Mas isso requer uma função de elasticidade.
-    
-    // Vou deixar null por enquanto para não inventar dados, a menos que o usuário forneça mais contexto.
-    // Mas para não deixar o campo inútil, vou fazer o seguinte:
-    // Se o usuário preencher "targetRoas", vamos calcular qual seria o CPL necessário para atingir esse ROAS
-    // mantendo o investimento atual. Isso é útil.
-    // Mas o campo chama "suggestedInvestment".
-    
-    // Vamos manter simples: Se o usuário quer atingir um ROAS X, e as métricas atuais dão ROAS Y.
-    // Se X < Y, ele pode investir mais (assumindo degradação).
-    // Se X > Y, ele precisa investir menos ou melhorar métricas.
-    
-    // Vou deixar como opcional e não calcular por enquanto para não confundir.
+
+  // Opção 1: Se o usuário forneceu uma meta de faturamento
+  if (targetRevenue && targetRevenue > 0) {
+    // Fórmula inversa:
+    // Revenue = (Investment / CPL) * (conversionRate / 100) * ticket
+    // Logo: Investment = (targetRevenue * CPL * 100) / (conversionRate * ticket)
+
+    const conversionDecimal = conversionRate / 100;
+    if (conversionDecimal > 0 && ticket > 0) {
+      const grossInvestmentNeeded = (targetRevenue / (1 - commissionRate / 100)) * cpl * 100 / (conversionRate * ticket);
+      suggestedInvestment = grossInvestmentNeeded > 0 ? grossInvestmentNeeded : undefined;
+    }
+  }
+  // Opção 2: Se o usuário forneceu um ROAS alvo (mas sem meta de receita)
+  else if (targetRoas && targetRoas > 0 && baseInvestment > 0) {
+    // Com ROAS alvo, podemos calcular a receita esperada com o investimento atual
+    // e depois sugerir quanto investir para dobrar, triplicar, etc.
+    // Mas sem uma meta clara, vamos calcular o investimento que manteria o mesmo ROAS
+    // mas com uma receita específica (ex: 2x a receita atual)
+
+    // Por exemplo: Se o ROAS alvo é maior que o ROAS atual,
+    // significa que o usuário precisa melhorar eficiência, não escalar investimento.
+    // Se o ROAS alvo é menor, pode escalar.
+
+    // Vamos calcular: "Quanto investir para ter o dobro de receita mantendo o ROAS atual?"
+    const targetRevenueFor2x = revenue * 2;
+    const conversionDecimal = conversionRate / 100;
+    if (conversionDecimal > 0 && ticket > 0) {
+      suggestedInvestment = (targetRevenueFor2x / (1 - commissionRate / 100)) * cpl * 100 / (conversionRate * ticket);
+    }
   }
 
   return {

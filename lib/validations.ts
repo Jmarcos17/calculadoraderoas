@@ -18,6 +18,7 @@ export const roasFormSchema = z.object({
   agencyFee: z.coerce.number().min(0).optional(),
   userAgencyFee: z.coerce.number().min(0).optional(),
   targetRoas: z.coerce.number().min(0).optional(),
+  targetRevenue: z.coerce.number().min(0).optional(),
 });
 
 export type RoasFormData = z.infer<typeof roasFormSchema>;
