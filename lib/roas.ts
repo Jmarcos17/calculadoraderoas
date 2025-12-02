@@ -91,40 +91,64 @@ export function calculateRoas({
     throw new Error('Taxa de comissão deve estar entre 0% e 100%');
   }
   
-  // Ajuste de período (se usuário estiver em modo diário, converte para mensal)
-  // Se o investimento for diário, multiplica por 30 para obter o mensal
-  // Se o investimento já for mensal, usa diretamente
-  // IMPORTANTE: O CPL é sempre o mesmo, independente do período (é o custo por lead)
-  // CORREÇÃO: Garantir que o período seja interpretado corretamente
-  // Por padrão, assumir que é mensal se não especificado ou se for um valor inválido
+  // ============================================================================
+  // IMPORTANTE: LÓGICA DE CÁLCULO MENSAL
+  // ============================================================================
+  // Todos os cálculos são feitos para 1 MÊS (30 dias).
+  // O investimento informado pelo usuário é SEMPRE mensal.
+  // 
+  // Se period = 'daily':
+  //   - O usuário informou investimento DIÁRIO
+  //   - Multiplicamos por 30 para obter o investimento MENSAL
+  //   - Todos os resultados (leads, vendas, revenue, ROAS) são MENSAIS
+  //
+  // Se period = 'monthly' (padrão):
+  //   - O usuário informou investimento MENSAL
+  //   - Usamos diretamente
+  //   - Todos os resultados são MENSAIS
+  //
+  // O tempo de contrato (contractMonths) é usado APENAS para:
+  //   ✅ Projeções mês a mês (gráficos e tabelas)
+  //   ✅ Visualização de crescimento
+  //   ❌ NÃO é usado para calcular os resultados principais
+  // ============================================================================
+  
   const normalizedPeriod = (period === 'daily' || period === 'monthly') ? period : 'monthly';
   const baseInvestment =
     normalizedPeriod === 'monthly' ? investment : investment * 30;
   
-  // Cálculo de leads: investimento mensal dividido pelo custo por lead
-  // O CPL não precisa ser ajustado porque é sempre "custo por lead", não varia com o período
+  // 1. LEADS MENSAIS = Investimento Mensal / CPL
+  // Exemplo: R$ 3.000 / R$ 50 = 60 leads/mês
   const leads = baseInvestment / cpl;
   
-  // Cálculo de vendas: leads multiplicado pela taxa de conversão (em decimal)
+  // 2. VENDAS MENSAIS = Leads Mensais × Taxa de Conversão
+  // Exemplo: 60 × 3% = 1.8 vendas/mês
   const sales = leads * (conversionRate / 100);
   
-  // Cálculo de receita bruta: vendas multiplicado pelo ticket médio
+  // 3. FATURAMENTO BRUTO MENSAL = Vendas Mensais × Ticket Médio
+  // Exemplo: 1.8 × R$ 200 = R$ 360/mês
   const grossRevenue = sales * ticket;
   
-  // Cálculo da comissão: receita bruta multiplicada pela taxa de comissão (em decimal)
+  // 4. COMISSÃO MENSAL = Faturamento Bruto Mensal × Taxa de Comissão
+  // Exemplo: R$ 360 × 0% = R$ 0/mês
   const commission = grossRevenue * (commissionRate / 100);
   
-  // Cálculo de receita líquida: receita bruta menos comissão
+  // 5. RECEITA LÍQUIDA MENSAL = Faturamento Bruto - Comissão
+  // Exemplo: R$ 360 - R$ 0 = R$ 360/mês
   const revenue = grossRevenue - commission;
   
-  // Cálculo de ROAS: receita bruta dividida pelo investimento (Padrão de mercado)
+  // 6. ROAS MENSAL = Faturamento Bruto Mensal / Investimento Mensal
+  // Exemplo: R$ 360 / R$ 3.000 = 0.12x
+  // Significa: Para cada R$1 investido, voltam R$0.12 por mês
   const roas = baseInvestment > 0 ? grossRevenue / baseInvestment : 0;
   
-  // Cálculo de custo por venda: investimento dividido pelas vendas
+  // 7. CPA (Custo Por Aquisição) = Investimento Mensal / Vendas Mensais
+  // Exemplo: R$ 3.000 / 1.8 = R$ 1.666,67 por venda
   const costPerSale = sales > 0 ? baseInvestment / sales : 0;
 
-  // Cálculo de ROI Simples (%)
-  // ROI considera o retorno líquido (Revenue - Investimento)
+  // 8. ROI MENSAL (%) = ((Receita Líquida - Investimento) / Investimento) × 100
+  // Exemplo: ((R$ 360 - R$ 3.000) / R$ 3.000) × 100 = -88%
+  // ROI considera o retorno líquido (após comissão)
   const roi = baseInvestment > 0 ? ((revenue - baseInvestment) / baseInvestment) * 100 : 0;
 
   // Cálculo de ROI com taxas de agência (se fornecidas)

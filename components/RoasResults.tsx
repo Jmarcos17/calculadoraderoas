@@ -101,13 +101,14 @@ export default function RoasResults({ results, input, benchmarks, branding, onSc
           }}
         >
           <div className="relative z-10">
-            <p className="text-white/80 text-sm font-medium mb-1">Faturamento Bruto Projetado</p>
+            <p className="text-white/80 text-sm font-medium mb-1">Faturamento Bruto Mensal</p>
             <h3 className="text-3xl md:text-4xl font-bold tracking-tight">
               {formatCurrency(grossRevenue)}
+              <span className="text-lg font-normal text-white/70 ml-2">/mês</span>
             </h3>
             {hasCommission && (
               <p className="text-white/90 text-sm mt-2 font-medium">
-                Líquido: {formatCurrency(revenue)}
+                Líquido: {formatCurrency(revenue)}/mês
               </p>
             )}
           </div>
@@ -117,7 +118,7 @@ export default function RoasResults({ results, input, benchmarks, branding, onSc
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col justify-center relative overflow-hidden group">
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-slate-500 text-sm font-medium">ROAS (Retorno Bruto)</p>
+              <p className="text-slate-500 text-sm font-medium">ROAS Mensal</p>
               {effectiveBenchmarks && (
                 <span className={`text-xs font-bold px-2 py-1 rounded-full ${
                   performance === 'excellent' ? 'bg-green-100 text-green-700' :
@@ -133,7 +134,7 @@ export default function RoasResults({ results, input, benchmarks, branding, onSc
               {roas.toFixed(2)}x
             </h3>
             <p className="text-slate-400 text-xs mt-2">
-              Para cada R$1 investido, voltam R${roas.toFixed(2)}
+              Para cada R$1 investido, voltam R${roas.toFixed(2)} por mês
             </p>
           </div>
           <TrendingUp 
@@ -161,20 +162,20 @@ export default function RoasResults({ results, input, benchmarks, branding, onSc
       <div>
         <h4 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
           <Target className="w-4 h-4 text-slate-400" />
-          Eficiência do Funil
+          Eficiência do Funil (Mensal)
         </h4>
         <div className="grid gap-4 md:grid-cols-3">
           <MetricCard 
             label="Leads Estimados" 
             value={formatDecimal(leads)} 
             icon={Users}
-            subtext="Potenciais clientes"
+            subtext="por mês"
           />
           <MetricCard 
             label="Vendas Projetadas" 
             value={formatDecimal(sales)} 
             icon={ShoppingCart}
-            subtext={`Conv. ${input.conversionRate}%`}
+            subtext={`${input.conversionRate}% conversão/mês`}
           />
           <MetricCard 
             label="Custo por Venda" 
@@ -189,12 +190,12 @@ export default function RoasResults({ results, input, benchmarks, branding, onSc
       <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
         <h4 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
           <Briefcase className="w-4 h-4 text-slate-400" />
-          Análise Financeira
+          Análise Financeira (Mensal)
         </h4>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <div>
             <p className="text-xs text-slate-500 mb-1">Investimento</p>
-            <p className="text-lg font-semibold text-slate-900">{formatCurrency(input.investment)}</p>
+            <p className="text-lg font-semibold text-slate-900">{formatCurrency(input.investment)}<span className="text-sm text-slate-500">/mês</span></p>
           </div>
           <div>
             <p className="text-xs text-slate-500 mb-1">ROI (Retorno Líquido)</p>
@@ -206,11 +207,11 @@ export default function RoasResults({ results, input, benchmarks, branding, onSc
             <>
               <div>
                 <p className="text-xs text-slate-500 mb-1">Faturamento Bruto</p>
-                <p className="text-lg font-semibold text-slate-700">{formatCurrency(grossRevenue)}</p>
+                <p className="text-lg font-semibold text-slate-700">{formatCurrency(grossRevenue)}<span className="text-sm text-slate-500">/mês</span></p>
               </div>
               <div>
                 <p className="text-xs text-slate-500 mb-1">Comissão Agência</p>
-                <p className="text-lg font-semibold text-slate-700">{formatCurrency(commission)}</p>
+                <p className="text-lg font-semibold text-slate-700">{formatCurrency(commission)}<span className="text-sm text-slate-500">/mês</span></p>
               </div>
             </>
           )}
@@ -230,7 +231,7 @@ export default function RoasResults({ results, input, benchmarks, branding, onSc
               </h4>
               <p className="text-sm text-slate-600 mb-3">
                 {input.targetRevenue
-                  ? `Para atingir sua meta de faturamento de ${formatCurrency(input.targetRevenue)}, recomendamos:`
+                  ? `Para atingir sua meta de faturamento de ${formatCurrency(input.targetRevenue)}/mês, recomendamos:`
                   : 'Para dobrar seu faturamento mantendo as mesmas métricas, recomendamos:'
                 }
               </p>
@@ -243,6 +244,11 @@ export default function RoasResults({ results, input, benchmarks, branding, onSc
                   por mês
                 </span>
               </div>
+              {input.contractMonths && input.contractMonths > 1 && (
+                <p className="text-xs text-slate-500 mt-2">
+                  Ou {formatCurrency(results.suggestedInvestment * input.contractMonths)} total em {input.contractMonths} meses
+                </p>
+              )}
             </div>
           </div>
         </div>

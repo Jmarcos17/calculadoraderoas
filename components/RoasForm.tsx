@@ -97,17 +97,19 @@ export default function RoasForm({ onCalculate, defaultValues, branding }: RoasF
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
-              Investimento em Tráfego (R$)
+              Investimento Mensal em Tráfego (R$)
             </label>
             <input
               type="number"
               step="0.01"
               {...register('investment', { valueAsNumber: true })}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              placeholder="Ex: 3000"
             />
             {errors.investment && (
               <p className="text-xs text-red-500 mt-1">{errors.investment.message}</p>
             )}
+            <p className="text-xs text-slate-500 mt-1">Valor que você investe por mês</p>
           </div>
 
           <div>
@@ -233,7 +235,7 @@ export default function RoasForm({ onCalculate, defaultValues, branding }: RoasF
           </h4>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
-              Meta de Faturamento (R$)
+              Meta de Faturamento Mensal (R$)
             </label>
             <input
               type="number"
@@ -243,7 +245,7 @@ export default function RoasForm({ onCalculate, defaultValues, branding }: RoasF
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
             />
             <p className="text-xs text-slate-500 mt-1">
-              Informe uma meta de faturamento para calcular o investimento necessário
+              Quanto você quer faturar por mês? Calcularemos o investimento necessário.
             </p>
           </div>
         </div>
