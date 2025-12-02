@@ -149,7 +149,7 @@ export default function ContractProjectionView({
         month.investment.toFixed(2),
         Math.round(month.leads),
         Math.round(month.sales),
-        month.revenue.toFixed(2),
+        month.grossRevenue.toFixed(2), // Use Gross Revenue
         month.roas.toFixed(2),
         month.cumulativeRevenue.toFixed(2),
       ].join(','));
@@ -188,6 +188,8 @@ export default function ContractProjectionView({
     console.error('ContractProjection: dados inválidos', { projection });
     return null;
   }
+
+  const totalNetRevenue = projection.monthly.reduce((sum, m) => sum + m.revenue, 0);
 
   return (
     <div className={`space-y-6 mt-6 ${presentationMode ? 'presentation-mode' : ''}`}>
@@ -339,7 +341,7 @@ export default function ContractProjectionView({
             <strong>Lucro líquido:</strong>{' '}
             <span className="text-green-600 font-semibold">
               {formatCurrency(
-                projection.total.totalRevenue - projection.total.totalInvestment
+                totalNetRevenue - projection.total.totalInvestment
               )}
             </span>
           </p>
@@ -515,13 +517,13 @@ export default function ContractProjectionView({
                     {formatCurrency(month.investment)}
                   </td>
                   <td className="py-2 px-3 text-right">
-                    {Math.round(month.leads)}
+                    {month.leads < 100 ? month.leads.toFixed(1).replace('.', ',') : Math.round(month.leads)}
                   </td>
                   <td className="py-2 px-3 text-right">
-                    {Math.round(month.sales)}
+                    {month.sales < 100 ? month.sales.toFixed(1).replace('.', ',') : Math.round(month.sales)}
                   </td>
                   <td className="py-2 px-3 text-right font-semibold text-green-600">
-                    {formatCurrency(month.revenue)}
+                    {formatCurrency(month.grossRevenue)}
                   </td>
                   <td className="py-2 px-3 text-right">
                     {month.roas.toFixed(2)}x

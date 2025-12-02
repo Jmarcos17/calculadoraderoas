@@ -82,6 +82,14 @@ export default function RoasResults({ results, input, benchmarks, branding, onSc
   const primaryColor = branding?.primaryColor || '#0ea5e9';
   const secondaryColor = branding?.secondaryColor || '#64748b';
 
+  // Helper para formatar números decimais de forma limpa
+  const formatDecimal = (val: number) => {
+    // Se for inteiro, não mostra decimal. Se for pequeno (<100), mostra 1 decimal.
+    if (val % 1 === 0) return val.toString();
+    if (val < 100) return val.toFixed(1).replace('.', ',');
+    return Math.round(val).toString();
+  };
+
   return (
     <section className="space-y-8">
       {/* 1. Destaque Principal (Revenue & ROAS) */}
@@ -93,13 +101,13 @@ export default function RoasResults({ results, input, benchmarks, branding, onSc
           }}
         >
           <div className="relative z-10">
-            <p className="text-white/80 text-sm font-medium mb-1">Faturamento Projetado</p>
+            <p className="text-white/80 text-sm font-medium mb-1">Faturamento Bruto Projetado</p>
             <h3 className="text-3xl md:text-4xl font-bold tracking-tight">
-              {formatCurrency(revenue)}
+              {formatCurrency(grossRevenue)}
             </h3>
             {hasCommission && (
-              <p className="text-white/60 text-xs mt-2">
-                Líquido (após comissão)
+              <p className="text-white/90 text-sm mt-2 font-medium">
+                Líquido: {formatCurrency(revenue)}
               </p>
             )}
           </div>
@@ -109,7 +117,7 @@ export default function RoasResults({ results, input, benchmarks, branding, onSc
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col justify-center relative overflow-hidden group">
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-slate-500 text-sm font-medium">ROAS (Retorno)</p>
+              <p className="text-slate-500 text-sm font-medium">ROAS (Retorno Bruto)</p>
               {effectiveBenchmarks && (
                 <span className={`text-xs font-bold px-2 py-1 rounded-full ${
                   performance === 'excellent' ? 'bg-green-100 text-green-700' :
@@ -158,13 +166,13 @@ export default function RoasResults({ results, input, benchmarks, branding, onSc
         <div className="grid gap-4 md:grid-cols-3">
           <MetricCard 
             label="Leads Estimados" 
-            value={Math.round(leads).toString()} 
+            value={formatDecimal(leads)} 
             icon={Users}
             subtext="Potenciais clientes"
           />
           <MetricCard 
             label="Vendas Projetadas" 
-            value={Math.round(sales).toString()} 
+            value={formatDecimal(sales)} 
             icon={ShoppingCart}
             subtext={`Conv. ${input.conversionRate}%`}
           />

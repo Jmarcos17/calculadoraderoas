@@ -32,7 +32,7 @@ export default function ScenariosComparison({
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-semibold text-red-700">Pessimista</h4>
             <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
-              -15% ticket, +20% CPL, -25% conversão
+              +20% CPL, -25% conversão
             </span>
           </div>
           <div className="space-y-2">
@@ -43,15 +43,15 @@ export default function ScenariosComparison({
               </p>
             </div>
             <div>
-              <p className="text-xs text-slate-600 mb-1">Faturamento</p>
+              <p className="text-xs text-slate-600 mb-1">Faturamento Bruto</p>
               <p className="text-sm font-semibold text-slate-900">
-                {formatCurrency(scenarios.pessimistic.revenue)}
+                {formatCurrency(scenarios.pessimistic.grossRevenue)}
               </p>
             </div>
             <div>
               <p className="text-xs text-slate-600 mb-1">Vendas</p>
               <p className="text-sm font-medium text-slate-900">
-                {Math.round(scenarios.pessimistic.sales)}
+                {scenarios.pessimistic.sales < 100 ? scenarios.pessimistic.sales.toFixed(1).replace('.', ',') : Math.round(scenarios.pessimistic.sales)}
               </p>
             </div>
           </div>
@@ -73,15 +73,15 @@ export default function ScenariosComparison({
               </p>
             </div>
             <div>
-              <p className="text-xs text-slate-600 mb-1">Faturamento</p>
+              <p className="text-xs text-slate-600 mb-1">Faturamento Bruto</p>
               <p className="text-sm font-semibold text-slate-900">
-                {formatCurrency(scenarios.realistic.revenue)}
+                {formatCurrency(scenarios.realistic.grossRevenue)}
               </p>
             </div>
             <div>
               <p className="text-xs text-slate-600 mb-1">Vendas</p>
               <p className="text-sm font-medium text-slate-900">
-                {Math.round(scenarios.realistic.sales)}
+                {scenarios.realistic.sales < 100 ? scenarios.realistic.sales.toFixed(1).replace('.', ',') : Math.round(scenarios.realistic.sales)}
               </p>
             </div>
           </div>
@@ -92,7 +92,7 @@ export default function ScenariosComparison({
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-semibold text-green-700">Otimista</h4>
             <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-              +20% ticket, -15% CPL, +30% conversão
+              -15% CPL, +30% conversão
             </span>
           </div>
           <div className="space-y-2">
@@ -103,15 +103,15 @@ export default function ScenariosComparison({
               </p>
             </div>
             <div>
-              <p className="text-xs text-slate-600 mb-1">Faturamento</p>
+              <p className="text-xs text-slate-600 mb-1">Faturamento Bruto</p>
               <p className="text-sm font-semibold text-slate-900">
-                {formatCurrency(scenarios.optimistic.revenue)}
+                {formatCurrency(scenarios.optimistic.grossRevenue)}
               </p>
             </div>
             <div>
               <p className="text-xs text-slate-600 mb-1">Vendas</p>
               <p className="text-sm font-medium text-slate-900">
-                {Math.round(scenarios.optimistic.sales)}
+                {scenarios.optimistic.sales < 100 ? scenarios.optimistic.sales.toFixed(1).replace('.', ',') : Math.round(scenarios.optimistic.sales)}
               </p>
             </div>
           </div>

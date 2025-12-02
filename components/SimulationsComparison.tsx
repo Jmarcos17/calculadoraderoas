@@ -124,15 +124,15 @@ export default function SimulationsComparison({ simulations, onClose }: Simulati
                 ))}
               </tr>
               <tr>
-                <td className="p-4 text-sm text-slate-600">Faturamento</td>
+                <td className="p-4 text-sm text-slate-600">Faturamento Bruto</td>
                 {simulations.map((sim) => (
                   <td key={sim.id} className="p-4 text-sm font-semibold text-green-600">
-                    {formatCurrency(sim.results.revenue)}
+                    {formatCurrency(sim.results.grossRevenue ?? sim.results.revenue)}
                   </td>
                 ))}
               </tr>
               <tr>
-                <td className="p-4 text-sm text-slate-600">Lucro Bruto (Est.)</td>
+                <td className="p-4 text-sm text-slate-600">Retorno Líquido</td>
                 {simulations.map((sim) => (
                   <td key={sim.id} className="p-4 text-sm font-medium text-slate-900">
                     {formatCurrency(sim.results.revenue - sim.inputData.investment)}
@@ -143,7 +143,7 @@ export default function SimulationsComparison({ simulations, onClose }: Simulati
                 <td className="p-4 text-sm text-slate-600">Leads</td>
                 {simulations.map((sim) => (
                   <td key={sim.id} className="p-4 text-sm font-medium text-slate-900">
-                    {Math.round(sim.results.leads)}
+                    {sim.results.leads < 100 ? sim.results.leads.toFixed(1).replace('.', ',') : Math.round(sim.results.leads)}
                   </td>
                 ))}
               </tr>
@@ -151,7 +151,7 @@ export default function SimulationsComparison({ simulations, onClose }: Simulati
                 <td className="p-4 text-sm text-slate-600">Vendas</td>
                 {simulations.map((sim) => (
                   <td key={sim.id} className="p-4 text-sm font-medium text-slate-900">
-                    {Math.round(sim.results.sales)}
+                    {sim.results.sales < 100 ? sim.results.sales.toFixed(1).replace('.', ',') : Math.round(sim.results.sales)}
                   </td>
                 ))}
               </tr>

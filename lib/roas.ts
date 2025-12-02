@@ -117,13 +117,14 @@ export function calculateRoas({
   // Cálculo de receita líquida: receita bruta menos comissão
   const revenue = grossRevenue - commission;
   
-  // Cálculo de ROAS: receita líquida dividida pelo investimento
-  const roas = baseInvestment > 0 ? revenue / baseInvestment : 0;
+  // Cálculo de ROAS: receita bruta dividida pelo investimento (Padrão de mercado)
+  const roas = baseInvestment > 0 ? grossRevenue / baseInvestment : 0;
   
   // Cálculo de custo por venda: investimento dividido pelas vendas
   const costPerSale = sales > 0 ? baseInvestment / sales : 0;
 
   // Cálculo de ROI Simples (%)
+  // ROI considera o retorno líquido (Revenue - Investimento)
   const roi = baseInvestment > 0 ? ((revenue - baseInvestment) / baseInvestment) * 100 : 0;
 
   // Cálculo de ROI com taxas de agência (se fornecidas)
@@ -146,12 +147,12 @@ export function calculateRoas({
   // Opção 1: Se o usuário forneceu uma meta de faturamento
   if (targetRevenue && targetRevenue > 0) {
     // Fórmula inversa:
-    // Revenue = (Investment / CPL) * (conversionRate / 100) * ticket
+    // GrossRevenue = (Investment / CPL) * (conversionRate / 100) * ticket
     // Logo: Investment = (targetRevenue * CPL * 100) / (conversionRate * ticket)
 
     const conversionDecimal = conversionRate / 100;
     if (conversionDecimal > 0 && ticket > 0) {
-      const grossInvestmentNeeded = (targetRevenue / (1 - commissionRate / 100)) * cpl * 100 / (conversionRate * ticket);
+      const grossInvestmentNeeded = (targetRevenue * cpl * 100) / (conversionRate * ticket);
       suggestedInvestment = grossInvestmentNeeded > 0 ? grossInvestmentNeeded : undefined;
     }
   }
@@ -167,10 +168,10 @@ export function calculateRoas({
     // Se o ROAS alvo é menor, pode escalar.
 
     // Vamos calcular: "Quanto investir para ter o dobro de receita mantendo o ROAS atual?"
-    const targetRevenueFor2x = revenue * 2;
+    const targetRevenueFor2x = grossRevenue * 2;
     const conversionDecimal = conversionRate / 100;
     if (conversionDecimal > 0 && ticket > 0) {
-      suggestedInvestment = (targetRevenueFor2x / (1 - commissionRate / 100)) * cpl * 100 / (conversionRate * ticket);
+      suggestedInvestment = (targetRevenueFor2x * cpl * 100) / (conversionRate * ticket);
     }
   }
 
@@ -211,7 +212,7 @@ export function calculateContractProjection(
       period: input.period || 'monthly',
     });
 
-    cumulativeRevenue += monthResult.revenue;
+    cumulativeRevenue += monthResult.grossRevenue; // Acumular Receita Bruta ou Líquida? Geralmente Bruta para faturamento.
     cumulativeInvestment += monthInvestment;
 
     monthly.push({
@@ -255,12 +256,14 @@ function generateInsights(
   if (monthly.length > 1) {
     const firstMonth = monthly[0];
     const lastMonth = monthly[monthly.length - 1];
-    const revenueGrowth = ((lastMonth.revenue / firstMonth.revenue - 1) * 100).toFixed(1);
+    const revenueGrowth = ((lastMonth.grossRevenue / firstMonth.grossRevenue - 1) * 100).toFixed(1);
     insights.push(`Crescimento de ${revenueGrowth}% no faturamento do primeiro ao último mês`);
   }
 
   // Insight sobre ROI
-  const roi = ((total.totalRevenue - total.totalInvestment) / total.totalInvestment * 100).toFixed(1);
+  // ROI usa receita líquida
+  const totalNetRevenue = monthly.reduce((sum, m) => sum + m.revenue, 0);
+  const roi = ((totalNetRevenue - total.totalInvestment) / total.totalInvestment * 100).toFixed(1);
   insights.push(`ROI total de ${roi}% sobre o investimento de ${months} meses`);
 
   // Insight sobre média mensal
@@ -272,26 +275,26 @@ function generateInsights(
 
   // Insight sobre melhor mês
   const bestMonth = monthly.reduce((best, current) =>
-    current.revenue > best.revenue ? current : best
+    current.grossRevenue > best.grossRevenue ? current : best
   );
-  insights.push(`Melhor mês: ${bestMonth.month}° mês com ${bestMonth.revenue.toLocaleString('pt-BR', {
+  insights.push(`Melhor mês: ${bestMonth.month}° mês com ${bestMonth.grossRevenue.toLocaleString('pt-BR', {
     style: 'currency',
     currency: 'BRL',
   })}`);
 
   // Insight sobre pior mês
   const worstMonth = monthly.reduce((worst, current) =>
-    current.revenue < worst.revenue ? current : worst
+    current.grossRevenue < worst.grossRevenue ? current : worst
   );
   if (worstMonth.month !== bestMonth.month) {
-    insights.push(`Mês mais desafiador: ${worstMonth.month}° mês com ${worstMonth.revenue.toLocaleString('pt-BR', {
+    insights.push(`Mês mais desafiador: ${worstMonth.month}° mês com ${worstMonth.grossRevenue.toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL',
     })}`);
   }
 
   // Insight sobre lucro líquido
-  const netProfit = total.totalRevenue - total.totalInvestment;
+  const netProfit = totalNetRevenue - total.totalInvestment;
   if (netProfit > 0) {
     insights.push(`Lucro líquido total de ${netProfit.toLocaleString('pt-BR', {
       style: 'currency',
@@ -311,19 +314,17 @@ export function applyScenario(
   
   switch (scenario) {
     case 'optimistic':
-      // Cenário otimista: +20% ticket, -15% CPL, +30% conversão
+      // Cenário otimista: -15% CPL, +30% conversão (Ticket mantido)
       return {
         ...baseInput,
-        ticket: baseInput.ticket * 1.2,
         cpl: baseInput.cpl * 0.85,
         conversionRate: baseInput.conversionRate * 1.3,
       };
     
     case 'pessimistic':
-      // Cenário pessimista: -15% ticket, +20% CPL, -25% conversão
+      // Cenário pessimista: +20% CPL, -25% conversão (Ticket mantido)
       return {
         ...baseInput,
-        ticket: baseInput.ticket * 0.85,
         cpl: baseInput.cpl * 1.2,
         conversionRate: baseInput.conversionRate * 0.75,
       };
