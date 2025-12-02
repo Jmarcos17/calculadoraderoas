@@ -153,7 +153,9 @@ export default function RoasForm({ onCalculate, defaultValues, branding }: RoasF
           <div className="grid gap-4 md:grid-cols-3">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
-                CPL - Custo por Lead (R$)
+                {selectedNiche && selectedNiche !== 'custom' 
+                  ? (getNicheById(selectedNiche).cplLabel || 'CPL - Custo por Lead (R$)')
+                  : 'CPL - Custo por Lead (R$)'}
               </label>
               <input
                 type="number"
@@ -183,7 +185,9 @@ export default function RoasForm({ onCalculate, defaultValues, branding }: RoasF
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
-                Taxa de Conversão (%)
+                {selectedNiche && selectedNiche !== 'custom' 
+                  ? (getNicheById(selectedNiche).conversionLabel || 'Taxa de Conversão (%)')
+                  : 'Taxa de Conversão (%)'}
               </label>
               <input
                 type="number"

@@ -15,14 +15,19 @@ export interface NicheBenchmark {
   id: NicheId;
   name: string;
   description: string;
+  // Configuração de métricas específicas do nicho
+  metricType: 'standard' | 'delivery' | 'contracts';
   // Valores médios do mercado (métricas saudáveis)
   avgTicket: number;
-  avgCpl: number;
-  avgConversionRate: number;
+  avgCpl: number;              // Para delivery, representa CPA (Custo por Aquisição)
+  avgConversionRate: number;   // Para advocacia, representa número médio de contratos
   // Benchmarks de performance
   goodRoas: number;        // ROAS considerado bom para o nicho
   excellentRoas: number;   // ROAS considerado excelente
   avgRoas: number;         // ROAS médio do mercado
+  // Labels customizados
+  cplLabel?: string;           // Label customizado para CPL/CPA
+  conversionLabel?: string;    // Label customizado para conversão/contratos
 }
 
 export const niches: Record<NicheId, NicheBenchmark> = {
@@ -30,9 +35,10 @@ export const niches: Record<NicheId, NicheBenchmark> = {
     id: 'moda',
     name: 'Moda (E-commerce)',
     description: 'E-commerce de vestuário, acessórios e calçados',
-    avgTicket: 450,          // Ticket otimizado (com kits/cross-sell)
-    avgCpl: 12,              // CPL saudável
-    avgConversionRate: 4,    // Conversão otimizada
+    metricType: 'standard',
+    avgTicket: 450,
+    avgCpl: 12,
+    avgConversionRate: 4,
     goodRoas: 1.4,
     excellentRoas: 2.0,
     avgRoas: 1.5,
@@ -41,6 +47,7 @@ export const niches: Record<NicheId, NicheBenchmark> = {
     id: 'beleza',
     name: 'Beleza & Estética',
     description: 'Clínicas, salões, depilação, skincare',
+    metricType: 'standard',
     avgTicket: 350,
     avgCpl: 10,
     avgConversionRate: 7,
@@ -52,28 +59,35 @@ export const niches: Record<NicheId, NicheBenchmark> = {
     id: 'delivery',
     name: 'Delivery (Food)',
     description: 'Restaurantes, bares, lanches - com recorrência',
-    avgTicket: 180,          // Ticket mensal (3 pedidos/mês)
-    avgCpl: 8,
+    metricType: 'delivery',
+    avgTicket: 180,
+    avgCpl: 8,  // CPA - Custo por Aquisição (compra)
     avgConversionRate: 6,
     goodRoas: 1.2,
     excellentRoas: 1.8,
     avgRoas: 1.32,
+    cplLabel: 'CPA - Custo por Compra (R$)',
+    conversionLabel: 'Taxa de Conversão (%)',
   },
   advocacia: {
     id: 'advocacia',
     name: 'Advocacia',
     description: 'Escritórios de advocacia (família, trabalhista, empresarial)',
+    metricType: 'contracts',
     avgTicket: 3500,
     avgCpl: 40,
-    avgConversionRate: 2,
+    avgConversionRate: 2,  // Número médio de contratos gerados
     goodRoas: 2.0,
     excellentRoas: 4.0,
     avgRoas: 2.33,
+    cplLabel: 'CPL - Custo por Lead (R$)',
+    conversionLabel: 'Contratos Gerados (quantidade)',
   },
   'servicos-premium': {
     id: 'servicos-premium',
     name: 'Serviços Premium',
     description: 'Odontologia, estética avançada, consultoria, cursos',
+    metricType: 'standard',
     avgTicket: 1800,
     avgCpl: 15,
     avgConversionRate: 8,
@@ -85,6 +99,7 @@ export const niches: Record<NicheId, NicheBenchmark> = {
     id: 'loja-fisica',
     name: 'Loja Física Local',
     description: 'Varejo local (não e-commerce)',
+    metricType: 'standard',
     avgTicket: 230,
     avgCpl: 12,
     avgConversionRate: 10,
@@ -96,6 +111,7 @@ export const niches: Record<NicheId, NicheBenchmark> = {
     id: 'cosmeticos',
     name: 'Cosméticos & Skincare',
     description: 'Produtos físicos de beleza (ticket otimizado)',
+    metricType: 'standard',
     avgTicket: 190,
     avgCpl: 8,
     avgConversionRate: 8,
@@ -107,6 +123,7 @@ export const niches: Record<NicheId, NicheBenchmark> = {
     id: 'custom',
     name: 'Personalizado',
     description: 'Configure suas próprias métricas',
+    metricType: 'standard',
     avgTicket: 800,
     avgCpl: 21.44,
     avgConversionRate: 5,
