@@ -169,7 +169,21 @@ export default function RoasForm({ onCalculate, defaultValues, branding }: RoasF
               <input
                 type="number"
                 step="0.01"
-                {...register('cpl', { valueAsNumber: true })}
+                {...register('cpl', { 
+                  valueAsNumber: true,
+                  onChange: (e) => {
+                    // Recalcular contratos se estiver no modo advocacia
+                    const newCpl = parseFloat(e.target.value);
+                    if (selectedNiche && selectedNiche !== 'custom' && !isNaN(newCpl) && newCpl > 0 && investment > 0) {
+                      const nicheData = getNicheById(selectedNiche);
+                      if (nicheData.metricType === 'contracts') {
+                        const leads = investment / newCpl;
+                        const newContracts = leads * (nicheData.avgConversionRate / 100);
+                        setValue('conversionRate', Number(newContracts.toFixed(1)), { shouldDirty: true });
+                      }
+                    }
+                  }
+                })}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50"
               />
               {errors.cpl && (
